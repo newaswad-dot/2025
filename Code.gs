@@ -1582,8 +1582,8 @@ function bulkExecuteExact(ids, config) {
     let extTargetSh = null;
     let extAdminColorBucket = null;
     let extAgentColorBucket = null;
-    const extTargetIdSet = Object.create(null);
-    const extRecentCopied = Object.create(null);
+    let extTargetColorBucket = null;
+    const extTargetIdRows = Object.create(null);
     let extColoredAdmin = {};
     let extColoredAgent = {};
     let copiedExternal = 0;
@@ -1612,12 +1612,15 @@ function bulkExecuteExact(ids, config) {
 
       if (externalSheetName) {
         extTargetSh = extAdSS.getSheetByName(externalSheetName) || extAdSS.insertSheet(externalSheetName);
+        extTargetColorBucket = Object.create(null);
         const lr = extTargetSh.getLastRow();
         if (lr > 0) {
           const colA = extTargetSh.getRange(1, 1, lr, 1).getDisplayValues();
           for (let i = 0; i < lr; i++) {
             const val = String(colA[i][0] || '').trim();
-            if (val) extTargetIdSet[val] = 1;
+            if (!val) continue;
+            if (!extTargetIdRows[val]) extTargetIdRows[val] = [];
+            extTargetIdRows[val].push(i + 1);
           }
         }
       }
@@ -1637,18 +1640,12 @@ function bulkExecuteExact(ids, config) {
       return res;
     };
 
-    const copyToExternalTarget = (colorHex, localRows, externalRows) => {
-      if (!includeExternal || !extTargetSh) return { copied: 0, skipped: 0 };
-      let res = { copied: 0, skipped: 0 };
-      if (externalRows.length) {
-        res = copyAdminRowOnce_(extAdMainSh, externalRows, extTargetSh, colorHex, extTargetIdSet, extRecentCopied);
-      }
-      if (!res.copied && localRows.length) {
-        const r2 = copyAdminRowOnce_(adSh, localRows, extTargetSh, colorHex, extTargetIdSet, extRecentCopied);
-        res.copied += r2.copied;
-        res.skipped += r2.skipped;
-      }
-      return res;
+    const colorExternalTarget = (colorHex, id) => {
+      if (!includeExternal || !extTargetSh || !colorHex) return false;
+      const rows = extTargetIdRows[id];
+      if (!rows || !rows.length) return false;
+      queueColorRows_(extTargetColorBucket, colorHex, rows);
+      return true;
     };
 
     list.forEach(id => {
@@ -1694,10 +1691,9 @@ function bulkExecuteExact(ids, config) {
           skippedLocal += resLocal.skipped;
 
           if (includeExternal) {
-            const resExt = copyToExternalTarget(adminColor, adRowsLocal, adRowsExt);
-            if (resExt.copied) markColored();
-            copiedExternal += resExt.copied;
-            skippedExternal += resExt.skipped;
+            if (colorExternalTarget(adminColor, id)) {
+              markColored();
+            }
           }
         }
       }
@@ -1732,10 +1728,9 @@ function bulkExecuteExact(ids, config) {
           skippedLocal += resLocal.skipped;
 
           if (includeExternal) {
-            const resExt = copyToExternalTarget(withdrawColor, adRowsLocal, adRowsExt);
-            if (resExt.copied) markColored();
-            copiedExternal += resExt.copied;
-            skippedExternal += resExt.skipped;
+            if (colorExternalTarget(withdrawColor, id)) {
+              markColored();
+            }
           }
         }
       }
@@ -1757,6 +1752,11 @@ function bulkExecuteExact(ids, config) {
       if (extAdminColorBucket && extAdMainSh) {
         for (const color in extAdminColorBucket) {
           colorRowsFast_(extAdMainSh, extAdminColorBucket[color], color);
+        }
+      }
+      if (extTargetColorBucket && extTargetSh) {
+        for (const color in extTargetColorBucket) {
+          colorRowsFast_(extTargetSh, extTargetColorBucket[color], color);
         }
       }
     }
