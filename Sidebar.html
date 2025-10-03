@@ -7,464 +7,435 @@
   <title>أداة البحث</title>
   <style>
     :root{
-      --bg:#f6f7fb; --card:#ffffff; --border:#e6e8ef; --text:#1f2937; --muted:#6b7280;
-      --blue:#2563eb; --blueH:#1d4ed8; --green:#16a34a; --greenH:#15803d;
-      --red:#dc2626; --redH:#b91c1c; --amber:#f59e0b; --violet:#8b5cf6;
+      color-scheme:dark;
+      --bg:#05080f;
+      --surface:#0f151f;
+      --surface-soft:#121b27;
+      --surface-strong:#182234;
+      --accent:#2bffa8;
+      --accent-strong:#1ddf8d;
+      --accent-dim:rgba(43,255,168,0.14);
+      --muted:#7f8ba5;
+      --text:#e8f7ff;
+      --text-strong:#ffffff;
+      --danger:#ff5d75;
+      --warning:#ffd166;
+      --border:rgba(255,255,255,0.07);
     }
-    *{box-sizing:border-box}
-    body{margin:0; padding:14px; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    *{box-sizing:border-box;font-family:'Tajawal','Cairo','Segoe UI',sans-serif;}
+    body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;}
+    body.drawer-open{overflow:hidden;}
+    body,button,input,select,textarea{font-size:15px;}
+    body.dark{background:#020307;color:var(--text);}
+    a{color:inherit;}
+    button{cursor:pointer;border:none;background:var(--surface-soft);color:var(--text);border-radius:18px;padding:12px 16px;font-weight:700;transition:transform .18s ease,box-shadow .18s ease,background .18s ease;}
+    button:active{transform:scale(.98);}
+    button:disabled{opacity:.45;cursor:not-allowed;}
+    .btn-green{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-strong) 100%);color:#04140d;box-shadow:0 12px 34px var(--accent-dim);}
+    .btn-green:hover{background:linear-gradient(135deg,var(--accent-strong) 0%,var(--accent) 100%);}
+    .btn-blue{background:linear-gradient(135deg,#2dd4ff 0%,#38bdf8 100%);color:#031420;box-shadow:0 12px 34px rgba(45,212,255,.25);}
+    .btn-red{background:linear-gradient(135deg,#ff5d75 0%,#ff3b5f 100%);color:#2b040b;box-shadow:0 12px 34px rgba(255,61,110,.28);}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+    input[type="text"],input[type="number"],select,textarea{width:100%;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,0.05);background:var(--surface);color:var(--text);outline:none;transition:border .18s ease,box-shadow .18s ease;}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+    textarea{min-height:130px;resize:vertical;line-height:1.6;}
+    label.small{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;}
+    .app-shell{width:100%;max-width:460px;padding:26px 18px 36px;display:flex;flex-direction:column;gap:18px;position:relative;}
+    @media(min-width:520px){.app-shell{max-width:520px;}}
+    .app-header{display:flex;align-items:center;gap:14px;}
+    .hamburger{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border-radius:16px;background:var(--surface-strong);border:1px solid var(--border);color:var(--accent);box-shadow:0 10px 26px rgba(18,233,153,.18);}
+    .header-meta{display:flex;flex-direction:row;align-items:stretch;gap:12px;margin-inline-start:auto;flex-wrap:wrap;justify-content:flex-end;}
+    .counter-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface-strong);padding:10px 14px;border-radius:16px;min-width:98px;box-shadow:0 10px 28px rgba(23,30,44,.36);border:1px solid var(--border);}
+    .counter-pill .label{font-size:11px;color:var(--muted);letter-spacing:.4px;}
+    .counter-pill .value{font-size:18px;font-weight:800;color:var(--accent);}
+    .view-switch{display:flex;gap:10px;}
+    .view-tab{flex:1;background:var(--surface);border:1px solid transparent;border-radius:16px;padding:12px 14px;color:var(--muted);font-weight:700;}
+    .view-tab.active{background:linear-gradient(135deg,var(--surface-strong),#1c2537);color:var(--accent);border-color:rgba(43,255,168,.22);box-shadow:0 12px 32px rgba(26,214,145,.22);}
+    .view-panel{display:none;flex-direction:column;gap:16px;}
+    .view-panel.active{display:flex;}
+    .card{background:var(--surface-strong);border-radius:26px;padding:18px;border:1px solid var(--border);box-shadow:0 18px 40px rgba(8,14,26,.45);}
+    .card.flat{background:var(--surface);border-color:rgba(255,255,255,.04);box-shadow:none;}
+    #loadCard{order:4;}
+    #loadCard button{width:100%;font-size:16px;}
+    #resultsBox{padding:26px 22px;text-align:center;background:radial-gradient(circle at top,#1a2e2a 0%,#0b1118 55%,#090d13 100%);border:1px solid rgba(43,255,168,.22);box-shadow:0 28px 70px rgba(30,255,168,.18);}
+    #resultsBox .badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+    .badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.4px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);}
+    .badge--withdraw{color:#4de4a1;border-color:rgba(77,228,161,.32);background:rgba(77,228,161,.09);}
+    .badge--agent{color:#38bdf8;border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.08);}
+    .badge--admin{color:#facc15;border-color:rgba(250,204,21,.32);background:rgba(250,204,21,.08);}
+    .badge--dup{color:#ff5d75;border-color:rgba(255,93,117,.34);background:rgba(255,93,117,.12);}
+    .badge--loading{color:var(--muted);border-color:rgba(255,255,255,.08);}
+    #nameText{font-size:15px;color:var(--muted);margin-bottom:8px;}
+    #amountText{font-size:64px;font-weight:900;color:var(--accent);text-shadow:0 0 24px rgba(43,255,168,.45);margin-bottom:8px;}
+    #multiText{font-size:12px;color:var(--muted);letter-spacing:.4px;}
+    #extraDupInfo{font-size:12px;color:var(--muted);margin-top:12px;}
+    .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+    .column{display:flex;flex-direction:column;gap:12px;}
+    .column.stretch>*{width:100%;}
+    .row.stretch>*,.row.stretch>button{flex:1 1 auto;}
+    .pill-group{display:flex;gap:10px;flex-wrap:wrap;}
+    .pill{flex:1;min-width:120px;background:var(--surface);padding:12px 14px;border-radius:18px;border:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;gap:6px;}
+    .pill .title{font-size:12px;color:var(--muted);}
+    .pill .value{font-weight:700;font-size:15px;color:var(--text);}
+    #searchCard{background:var(--surface);border-radius:22px;box-shadow:none;border:1px solid rgba(255,255,255,.05);}
+    #searchCard button{min-width:160px;}
+    #searchCard .column button{width:100%;}
+    #advCard{background:var(--surface);border-radius:26px;border:1px solid rgba(255,255,255,.05);box-shadow:none;display:flex;flex-direction:column;gap:16px;}
+    #advCard .row{gap:10px;}
+    #advCard select{background:var(--surface-strong);}
+    #advCard .btn-ghost{border-color:rgba(43,255,168,.26);color:var(--accent);min-width:110px;}
+    #advCard .btn-green{padding:16px;font-size:18px;border-radius:20px;}
+    #advCard input[type="color"]{width:44px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:var(--surface-strong);padding:0;}
+    #advCard .toggle-chip{display:none;}
+    #advCard .toggles-row{display:none;}
+    #discountInput,#applyDiscountToMessage,#enableSalaryCorrection{display:none;}
+    #personCard{display:none !important;}
+    #bulkToggleCard,#bulkMobileMount{display:none !important;}
+    #bulkView .card{background:var(--surface);border-radius:26px;border:1px solid rgba(255,255,255,.05);}
+    #bulkCard h3{margin:0 0 12px 0;font-size:20px;color:var(--accent);}
+    #bulkCard .bulk-note{color:var(--muted);}
+    #bulkCard textarea{min-height:160px;background:var(--surface-strong);}
+    #bulkCard table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;border-radius:16px;overflow:hidden;}
+    #bulkCard thead{background:var(--surface-strong);}
+    #bulkCard th,#bulkCard td{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);text-align:right;}
+    #bulkCard tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
+    #bulkCard .bulk-progress{height:8px;background:rgba(255,255,255,.04);border-radius:999px;overflow:hidden;}
+    #bulkCard .bulk-progress-bar{background:linear-gradient(90deg,var(--accent),#38bdf8);}
+    #bulkCard .bulk-page-btn{background:var(--surface-strong);color:var(--text);border:1px solid rgba(255,255,255,.08);}
+    .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:8;}
+    .drawer-backdrop.show{opacity:1;pointer-events:auto;}
+    #quickTools.drawer{position:fixed;top:40px;left:50%;transform:translate(-50%,-20px) scale(.96);width:90%;max-width:360px;background:var(--surface-strong);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:20px 18px;box-shadow:0 30px 80px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .22s ease;z-index:9;}
+    #quickTools.drawer.open{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1);}
+    .drawer-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+    .drawer-title{font-size:18px;font-weight:800;color:var(--text);}
+    .drawer-close{background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--muted);width:38px;height:38px;border-radius:14px;}
+    .drawer-items{display:flex;flex-direction:column;gap:12px;}
+    .drawer-item{background:var(--surface);border-radius:18px;padding:14px 16px;text-align:center;font-weight:700;letter-spacing:.4px;border:1px solid rgba(255,255,255,.04);color:var(--text);}
+    .drawer-item.primary{background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:#04140d;box-shadow:0 14px 38px var(--accent-dim);}
+    .drawer-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:18px;padding:12px 16px;border:1px solid rgba(255,255,255,.04);}
+    #qtMode{width:58px;height:30px;border-radius:999px;background:var(--surface-strong);position:relative;border:1px solid rgba(255,255,255,.12);padding:0;font-size:0;line-height:0;}
+    #qtMode::after{content:'';position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35);transition:transform .2s ease,background .2s ease;}
+    body.dark #qtMode{background:var(--accent);border-color:rgba(43,255,168,.32);}
+    body.dark #qtMode::after{transform:translateX(-26px);background:#052016;}
+    .hidden-tools{display:none;}
+    .muted{color:var(--muted);}
+    .lastid{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);color:var(--muted);cursor:pointer;background:var(--surface-strong);font-size:12px;}
+    #lastIdPill{margin-inline-start:auto;}
+    #bulkCard .bulk-chip{background:rgba(255,93,117,.16);color:#ff8da4;border-radius:999px;padding:2px 8px;font-size:11px;}
+    .bulk-pagination{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap;}
+    .bulk-page-info{color:var(--muted);font-size:12px;}
+    .bulk-counters{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;font-size:12px;color:var(--muted);}
+    .bulk-counters b{color:var(--text-strong);}
+    #bulkStatusText{font-size:13px;}
+    #pasteHint{color:var(--muted);}
+    #advNote{color:var(--muted);font-size:13px;}
+    #loadNote{margin-top:8px;color:var(--muted);font-size:12px;}
+    #statusChipsRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+    #statusChipsRow .chip{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);font-size:11px;color:var(--muted);}
+    .view-panel footer{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;}
 
-    .container{max-width:1100px; margin:0 auto; display:grid; gap:12px}
-    @media(min-width:1060px){
-      .container{ grid-template-columns: 1fr 1fr; align-items:start; }
-      #advCard{ grid-column:1 }
-      #personCard{ grid-column:2 }
-      .span2{ grid-column:1 / span 2; }
+    @media(min-width:1024px){
+      body{padding:42px 0;}
+      .app-shell{max-width:1260px;width:min(1260px,calc(100vw - 120px));padding:40px 48px;gap:26px;}
+      .app-header{padding-inline-end:8px;}
+      .header-meta{flex-wrap:nowrap;gap:18px;}
+      .view-switch{justify-content:flex-start;gap:16px;}
+      .view-tab{max-width:240px;}
+      .view-panel{gap:22px;}
+      #mainView.view-panel.active{display:grid;grid-template-columns:minmax(320px,360px) minmax(0,1fr);grid-template-areas:
+        'results adv'
+        'search adv'
+        'load adv'
+        'bulkToggle adv'
+        'bulkMount adv'
+        'person adv';
+        align-items:start;gap:22px 28px;
+      }
+      #resultsBox{grid-area:results;}
+      #searchCard{grid-area:search;}
+      #loadCard{grid-area:load;}
+      #bulkToggleCard{grid-area:bulkToggle;}
+      #bulkMobileMount{grid-area:bulkMount;}
+      #personCard{grid-area:person;}
+      #advCard{grid-area:adv;align-self:start;min-height:100%;}
+      #advCard .pill-group{flex-wrap:wrap;}
+      #advCard .pill{flex:1 1 200px;}
+      #advCard .row.stretch>*,#advCard .row.stretch>button{flex:1;}
+      #loadCard button{width:100%;}
+      #bulkView.view-panel.active{display:flex;}
+      #bulkCard{padding:28px 32px;}
+      .bulk-input-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px;align-items:start;}
+      .bulk-input-grid textarea{min-height:320px;}
+      .bulk-actions-column{display:flex;flex-direction:column;gap:12px;}
+      .bulk-progress,.bulk-progress-text,.bulk-counters,.bulk-pagination{max-width:none;}
     }
-    @media(max-width:1059px){
-      #advCard{ order:1 }
-      #personCard{ order:2 }
-    }
-
-    .card{background:#fff; border:1px solid var(--border); border-radius:14px; padding:12px}
-    .row{display:flex; gap:8px; align-items:center; flex-wrap:nowrap}
-    .row.stretch > *{flex:1}
-    label.small{font-size:12px; color:var(--muted); margin-bottom:6px; display:block}
-    input[type="text"], input[type="number"], select, textarea{
-      width:100%; padding:10px 12px; border:1px solid var(--border);
-      border-radius:10px; font-size:14px; background:#fff
-    }
-    textarea{min-height:120px; resize:vertical; line-height:1.5; font-family:inherit;}
-    button{border:0; border-radius:10px; padding:10px 12px; font-weight:600; cursor:pointer}
-    .btn-blue{background:var(--blue); color:#fff} .btn-blue:hover{background:var(--blueH)}
-    .btn-green{background:var(--green); color:#fff} .btn-green:hover{background:var(--greenH)}
-    .btn-red{background:var(--red); color:#fff} .btn-red:hover{background:var(--redH)}
-    .btn-ghost{background:#0000; border:1px solid var(--border); color:var(--text)}
-    .muted{font-size:11px; color:var(--muted)}
-
-    .results{
-      min-height:120px; display:flex; flex-direction:column; justify-content:center; align-items:center;
-      gap:10px; text-align:center; background:white; border-radius:12px; padding:16px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.06);
-    }
-    .badges{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center}
-    .badge{font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px; border:1px solid transparent; letter-spacing:.2px;}
-    .badge--admin{ background:#fff7ed; color:#9a3412; border-color:#fdba74; }
-    .badge--withdraw{ background:#eff6ff; color:#1d4ed8; border-color:#93c5fd; }
-    .badge--agent{ background:#ecfdf5; color:#065f46; border-color:#6ee7b7; }
-    .badge--missing{ background:#f9fafb; color:#6b7280; border-color:#ef4444; }
-    .badge--loading{ background:#f3f4f6; color:#6b7280; border-color:#e5e7eb; }
-    .badge--dup{ background:#fef2f2; color:#b91c1c; border-color:#fca5a5; }
-
-    .amountBig{ font-size:44px; font-weight:900; line-height:1; }
-    .subline{ font-size:12px; color:#6b7280; }
-
-    .lastid{display:inline-flex; gap:6px; align-items:center; padding:6px 8px; border-radius:999px;
-      border:1px solid var(--border); background:#fff; cursor:pointer; font-size:12px}
-
-    #resultsBox, #advCard, #personCard { position:relative; }
-    @keyframes flashGlowBlue  { 0%{box-shadow:0 0 0 0 rgba(59,130,246,0)} 25%{box-shadow:0 0 0 6px rgba(59,130,246,.22)} 100%{box-shadow:0 0 0 0 rgba(59,130,246,0)} }
-    @keyframes flashGlowGreen { 0%{box-shadow:0 0 0 0 rgba(16,185,129,0)} 25%{box-shadow:0 0 0 6px rgba(16,185,129,.22)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
-    .flash-blue { animation:flashGlowBlue  .42s ease; }
-    .flash-green{ animation:flashGlowGreen .42s ease; }
-
-    .row.stretch > button{ order:-1; flex:0 0 auto; min-width:110px; }
-    .row.stretch > input, .row.stretch > select{ flex:1 1 auto; min-width:0; }
-
-    #bulkCard h3{margin:0 0 10px;font-size:18px;font-weight:800;}
-    .bulk-note{font-size:12px;color:var(--muted);margin-bottom:10px;}
-    .bulk-input-grid{display:flex;flex-direction:column;gap:10px;align-items:stretch;}
-    .bulk-actions-column{display:flex;flex-direction:column;gap:8px;}
-    .bulk-actions-column > button{width:100%;}
-    .bulk-progress{height:6px;background:var(--border);border-radius:999px;overflow:hidden;margin-top:10px;}
-    .bulk-progress-bar{height:100%;width:0;background:var(--blue);transition:width .3s ease;}
-    .bulk-progress-text{font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
-    .bulk-counters{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;color:var(--muted);}
-    .bulk-counters b{font-size:13px;color:var(--text);}
-    .bulk-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px;}
-    .bulk-table th,.bulk-table td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);}
-    .bulk-table th{font-weight:700;color:var(--muted);background:#f9fafb;}
-    .bulk-table tbody tr:nth-child(even){background:#f9fafb;}
-    .bulk-table .state-cell{font-weight:700;}
-    .bulk-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;background:#fef2f2;color:#b91c1c;}
-    .bulk-empty{padding:20px;border:1px dashed var(--border);border-radius:12px;text-align:center;font-size:13px;color:var(--muted);margin-top:12px;}
-    .bulk-toolbar{display:none;}
-    .bulk-pagination{display:none;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;justify-content:space-between;}
-    .bulk-page-btn{border:1px solid var(--border);background:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;}
-    .bulk-page-btn:disabled{opacity:.55;cursor:not-allowed;}
-    .bulk-page-info{flex:1;text-align:center;font-size:12px;color:var(--muted);}
-    #bulkToggleCard{display:none;}
-    #bulkMobileMount{display:none;}
-    .bulk-mobile-hidden{display:none !important;}
-
-    /* Dark */
-    body.dark{ background:#0f1115; color:#e5e7eb;}
-    body.dark .card{ background:#1f232b; border-color:#2d323c; color:#e5e7eb; }
-    body.dark input, body.dark select{ background:#111827; color:#f9fafb; border-color:#374151;}
-    body.dark textarea{ background:#111827; color:#f9fafb; border-color:#374151;}
-    body.dark .results{ background:#1f232b; }
-    body.dark .amountBig{ color:#22c55e; text-shadow:0 0 6px rgba(34,197,94,.7); }
-    body.dark .lastid{ background:#111827; border-color:#2a2f39; color:#e5e7eb }
-    body.dark .muted{ color:#cbd5e1; }
-    body.dark .btn-ghost{ color:#e5e7eb; }
-    body.dark .badge{ border-color:#374151; }
-    body.dark .bulk-table th{background:#1a1e27;color:#cbd5e1;}
-    body.dark .bulk-table tbody tr:nth-child(even){background:#161b24;}
-    body.dark .bulk-counters b{color:#e5e7eb;}
-    body.dark .bulk-progress{background:#1f2937;}
-    body.dark .bulk-progress-bar{background:#38bdf8;}
-    body.dark .bulk-chip{background:#7f1d1d;color:#fecaca;}
-    body.dark .bulk-page-btn{background:#111827;color:#e5e7eb;border-color:#374151;}
-    body.dark .bulk-page-info{color:#cbd5e1;}
-
-    /* iOS toggles */
-    .ios-toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
-    .ios-toggle input{opacity:0;width:0;height:0}
-    .slider{position:relative;display:inline-block;width:50px;height:28px;background:#cfcfcf;border-radius:28px;transition:.25s}
-    .slider:before{content:"";position:absolute;left:3px;bottom:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:.25s}
-    input:checked + .slider{background:#34c759}
-    input:checked + .slider:before{transform:translateX(22px)}
-    body.dark input:checked + .slider{background:#22c55e}
-    .switch-label{font-size:13px;font-weight:600;white-space:nowrap}
-    .toggle-chip{display:flex;align-items:center;gap:10px;padding:6px 10px;border:1px solid var(--border);border-radius:14px;background:#fafafa}
-    body.dark .toggle-chip{background:#111827;border-color:#2d323c}
-    .toggles-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  
-/* Mobile-first tweaks */
-html, body { max-width: 100%; overflow-x: hidden; }
-.container { width: 100%; max-width: 940px; margin: 0 auto; padding: 10px; }
-@media (max-width: 640px){
-  .container{ max-width: 100% !important; padding: 12px !important; }
-  .card{ border-radius: 14px !important; }
-  .row{ flex-wrap: wrap !important; }
-  input, button, select{ font-size: 16px !important; }
-}
-
-@media (max-width:1200px){
-  #bulkToggleCard{display:block;}
-  #bulkMobileMount{display:grid;gap:12px;}
-}
-
-</style>
+  </style>
 </head>
-<body>
-  <div class="container">
-
-    <!-- تحميل البيانات -->
-    <div class="card span2" id="loadCard">
-      <div class="row stretch">
-        <button id="reloadBtn" class="btn-red">تحميل البيانات</button>
+<body class="dark">
+  <div class="app-shell">
+    <header class="app-header">
+      <button id="menuToggle" class="hamburger" type="button" aria-label="القائمة">☰</button>
+      <div class="header-meta">
+        <div class="counter-pill">
+          <span class="label">ملوّن</span>
+          <span id="qtColored" class="value">—</span>
+        </div>
+        <div class="counter-pill">
+          <span class="label">غير ملوّن</span>
+          <span id="qtUncolored" class="value">—</span>
+        </div>
       </div>
-      <div id="loadNote" class="muted" style="margin-top:6px"></div>
+    </header>
+
+    <div class="view-switch">
+      <button class="view-tab active" type="button" data-view="main">الصفحة الرئيسية</button>
+      <button class="view-tab" type="button" data-view="bulk">أداة البحث الجماعي</button>
     </div>
 
-    <!-- البحث -->
-    <div class="card" id="searchCard">
-      <label class="small">ID للبحث</label>
-      <div class="row stretch">
-        <button id="pasteSearchBtn" class="btn-blue">لصق ثم بحث</button>
-        <input id="idInput" type="text" placeholder="أدخل ID هنا" autocomplete="off" inputmode="numeric">
-      </div>
-      <div class="row" style="margin-top:6px; justify-content:space-between">
-        <div id="pasteHint" class="muted"></div>
-        <div id="lastIdPill" class="lastid" style="display:none">آخر ID: <b id="lastIdText"></b></div>
-      </div>
-    </div>
-
-    <!-- النتائج -->
-    <div class="card results" id="resultsBox">
-      <div class="badges">
-        <span id="statusBadge" class="badge badge--loading">—</span>
-        <span id="dupBadge" class="badge badge--dup" style="display:none">مكرر</span>
-        <span id="statusChipsRow"></span>
-      </div>
-      <!-- اسم العميل من عمود B -->
-      <div id="nameText" class="subline">—</div>
-            <div id="amountText" class="amountBig">—</div>
-      <div id="multiText" class="subline"></div>
-      <div id="extraDupInfo" class="muted" style="margin-top:4px"></div>
-    </div>
-
-    <!-- الميزات الذكية -->
-    <div class="card" id="advCard">
-      <button id="advRunBtn" class="btn-green" style="width:100%;padding:14px;font-size:16px;font-weight:700;margin-bottom:12px">
-        تنفيذ (حسب النتيجة)
-      </button>
-      <div id="advNote" class="muted" style="margin-bottom:12px"></div>
-
-      <div class="row" style="gap:8px; align-items:center">
-        <label class="small" style="margin:0;min-width:60px">الهدف</label>
-        <select id="sheetSelect" style="flex:1"></select>
-
-        <label class="small" style="margin:0;min-width:70px">التنفيذ</label>
-        <select id="targetMode" style="flex:1">
-          <option value="agent">الوكيل فقط</option>
-          <option value="both" selected>الإدارة + الوكيل</option>
-        </select>
-
-        <button id="refreshSheetsBtn" class="btn-ghost" title="تحديث قائمة الأوراق">↻</button>
-      </div>
-
-      <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap">
-        <div style="flex:1;display:flex;align-items:center;gap:8px">
-          <input id="adminColor" type="color" value="#fde68a"
-            style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
-          <label class="small" style="margin:0">لون الإدارة</label>
+    <section id="mainView" class="view-panel active">
+      <div class="card" id="resultsBox">
+        <div class="badges">
+          <span id="statusBadge" class="badge badge--loading">—</span>
+          <span id="dupBadge" class="badge badge--dup" style="display:none">مكرر</span>
+          <span id="statusChipsRow"></span>
         </div>
-        <div style="flex:1;display:flex;align-items:center;gap:8px">
-          <input id="withdrawColor" type="color" value="#ddd6fe"
-            style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
-          <label class="small" style="margin:0">لون سحب وكالة</label>
+        <div id="nameText" class="subline">—</div>
+        <div id="amountText" class="amountBig">—</div>
+        <div id="multiText" class="subline"></div>
+        <div id="extraDupInfo" class="muted" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card flat" id="searchCard">
+        <label class="small">ID للبحث</label>
+        <div class="column stretch">
+          <input id="idInput" type="text" placeholder="أدخل ID هنا" autocomplete="off" inputmode="numeric">
+          <button id="pasteSearchBtn" class="btn-blue" type="button">لصق ثم بحث</button>
+        </div>
+        <div class="row" style="margin-top:8px;justify-content:space-between;">
+          <div id="pasteHint" class="muted"></div>
+          <div id="lastIdPill" class="lastid" style="display:none">آخر ID: <b id="lastIdText"></b></div>
         </div>
       </div>
 
-      <div class="row stretch" style="margin-top:10px">
-        <input id="newSheetName" type="text" placeholder="اسم ورقة جديدة (داخل الإدارة)">
-        <button id="createSheetBtn" class="btn-ghost">إنشاء</button>
-      </div>
+      <div class="card flat" id="advCard">
+        <button id="advRunBtn" class="btn-green" type="button">تنفيذ (حسب النتيجة)</button>
+        <div id="advNote" class="muted"></div>
 
-      <div class="row" style="margin-top:12px; align-items:center; gap:12px; flex-wrap:wrap">
-        <div class="row" style="gap:8px; align-items:center">
-          <label class="small" style="margin:0">الخصم %</label>
-          <input id="discountInput" type="number" min="0" max="100" value="0" step="1" style="width:110px">
+        <div class="pill-group">
+          <div class="pill">
+            <span class="title">الهدف</span>
+            <select id="sheetSelect"></select>
+          </div>
+          <div class="pill">
+            <span class="title">التنفيذ</span>
+            <select id="targetMode">
+              <option value="agent">الوكيل فقط</option>
+              <option value="both" selected>الإدارة + الوكيل</option>
+            </select>
+          </div>
+          <button id="refreshSheetsBtn" class="btn-ghost" type="button" title="تحديث قائمة الأوراق">↻</button>
         </div>
 
-        <div class="toggle-chip">
-          <span class="switch-label">الخصم لحظيًا</span>
-          <label class="ios-toggle">
-            <input id="applyDiscountToMessage" type="checkbox">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-chip">
-          <span class="switch-label">تصحيح الراتب</span>
-          <label class="ios-toggle">
-            <input id="enableSalaryCorrection" type="checkbox">
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
-      <div id="aiMountHere"></div>
-      <div id="afterAiHook"></div>
-    </div>
-
-    <div class="card span2" id="bulkToggleCard">
-      <div class="row" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <strong>إظهار أداة البحث الجماعي</strong>
-        <button id="bulkToggleBtn" class="btn-blue" style="min-width:130px">تفعيل الأداة</button>
-      </div>
-      <div id="bulkToggleNote" class="muted" style="margin-top:6px">تظهر الأداة في الموبايل بعد التفعيل (20 نتيجة لكل صفحة).</div>
-    </div>
-
-    <div id="bulkMobileMount" class="span2"></div>
-
-    <!-- بيانات صاحب الـID -->
-    <div class="card" id="personCard">
-      <div class="row" style="justify-content:space-between; align-items:center">
-        <strong>بيانات صاحب الـID</strong>
-        <div class="row" style="gap:6px; flex:0 0 auto">
-          <button id="copyMsgBtn" class="btn-green">نسخ الرسالة</button>
-          <button id="colorAllBtn" class="btn-ghost" title="تلوين كل الـIDs لهذا الشخص بسرعة">تلوين الكل</button>
-        </div>
-      </div>
-      <div id="personNote" class="muted" style="margin-top:6px">—</div>
-      <textarea id="personMsg" rows="8" style="width:100%; margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:14px" readonly></textarea>
-    </div>
-
-    <!-- أداة البحث الجماعي -->
-    <div class="card span2" id="bulkCard">
-      <h3>أداة البحث الجماعي</h3>
-      <div class="bulk-note" id="bulkStatusText">ألصق IDs وسيتم التحليل تلقائيًا.</div>
-
-      <div class="row" style="gap:12px; flex-wrap:wrap; align-items:flex-end">
-        <div style="flex:1; min-width:180px">
-          <label class="small">النطاق</label>
-          <select id="bulkScope">
-            <option value="agent">الوكيل فقط</option>
-            <option value="both" selected>الإدارة + الوكيل</option>
-            <option value="all">الكل (يشمل الخارجي)</option>
-          </select>
-        </div>
-        <div style="flex:1; min-width:220px">
-          <label class="small">ورقة الهدف</label>
-          <div class="row" style="gap:6px; align-items:center">
-            <select id="bulkTargetSheet" style="flex:1"></select>
-            <button id="bulkRefreshSheets" class="btn-ghost" title="تحديث قائمة الأوراق" style="flex:0 0 auto">↻</button>
+        <div class="pill-group">
+          <div class="pill">
+            <span class="title">لون الإدارة</span>
+            <input id="adminColor" type="color" value="#fde68a">
+          </div>
+          <div class="pill">
+            <span class="title">لون سحب وكالة</span>
+            <input id="withdrawColor" type="color" value="#ddd6fe">
           </div>
         </div>
-      </div>
 
-      <div class="row stretch" style="margin-top:10px">
-        <input id="bulkNewSheet" type="text" placeholder="اسم ورقة جديدة (داخل الإدارة)">
-        <button id="bulkCreateSheet" class="btn-ghost">إنشاء ورقة</button>
-      </div>
-
-      <div id="bulkExternalWrap" style="margin-top:12px; display:none">
-        <label class="small" style="display:block">ورقة الهدف (خارجي) <span id="bulkExternalFileLabel" class="muted"></span></label>
-        <div class="row" style="gap:6px; align-items:center">
-          <select id="bulkExternalTargetSheet" style="flex:1"></select>
-          <button id="bulkExternalRefreshSheets" class="btn-ghost" title="تحديث قائمة الأوراق الخارجية" style="flex:0 0 auto">↻</button>
+        <div class="row stretch">
+          <input id="newSheetName" type="text" placeholder="اسم ورقة جديدة (داخل الإدارة)">
+          <button id="createSheetBtn" class="btn-ghost" type="button">إنشاء</button>
         </div>
-        <div class="row stretch" style="margin-top:8px">
-          <input id="bulkExternalNewSheet" type="text" placeholder="اسم ورقة جديدة (خارجية)">
-          <button id="bulkExternalCreateSheet" class="btn-ghost">إنشاء</button>
+
+        <div class="row toggles-row">
+          <div class="row" style="gap:8px;align-items:center;">
+            <label class="small" style="margin:0;">الخصم %</label>
+            <input id="discountInput" type="number" min="0" max="100" value="0" step="1" style="width:110px">
+          </div>
+          <div class="toggle-chip">
+            <span class="switch-label">الخصم لحظيًا</span>
+            <label class="ios-toggle">
+              <input id="applyDiscountToMessage" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-chip">
+            <span class="switch-label">تصحيح الراتب</span>
+            <label class="ios-toggle">
+              <input id="enableSalaryCorrection" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>
-        <div id="bulkExternalNote" class="muted" style="margin-top:6px"></div>
+        <div id="aiMountHere"></div>
+        <div id="afterAiHook"></div>
       </div>
 
-      <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap">
-        <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:180px">
-          <input id="bulkAdminColor" type="color" value="#fde68a"
-            style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
-          <label class="small" style="margin:0">لون الإدارة</label>
+      <div class="card flat" id="loadCard">
+        <div class="row stretch">
+          <button id="reloadBtn" class="btn-red" type="button">تحميل البيانات</button>
         </div>
-        <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:180px">
-          <input id="bulkWithdrawColor" type="color" value="#ddd6fe"
-            style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
-          <label class="small" style="margin:0">لون الوكيل / سحب الوكالة</label>
+        <div id="loadNote" class="muted"></div>
+      </div>
+
+      <div class="card flat" id="bulkToggleCard">
+        <div class="row" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <strong>إظهار أداة البحث الجماعي</strong>
+          <button id="bulkToggleBtn" class="btn-blue" type="button" style="min-width:130px">تفعيل الأداة</button>
         </div>
+        <div id="bulkToggleNote" class="muted" style="margin-top:6px">تظهر الأداة في الموبايل بعد التفعيل (20 نتيجة لكل صفحة).</div>
       </div>
 
-      <div class="row" style="margin-top:12px; align-items:center; gap:12px; flex-wrap:wrap">
-        <div class="row" style="gap:8px; align-items:center">
-          <label class="small" style="margin:0">الخصم %</label>
-          <input id="bulkDiscount" type="number" min="0" max="100" value="0" step="1" style="width:110px">
+      <div id="bulkMobileMount" class="span2"></div>
+
+      <div class="card flat" id="personCard">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <strong>بيانات صاحب الـID</strong>
+          <div class="row" style="gap:6px; flex:0 0 auto">
+            <button id="copyMsgBtn" class="btn-green" type="button">نسخ الرسالة</button>
+            <button id="colorAllBtn" class="btn-ghost" type="button" title="تلوين كل الـIDs لهذا الشخص بسرعة">تلوين الكل</button>
+          </div>
         </div>
-        <div class="muted" id="bulkDiscountNote">يُطبّق تلقائيًا على النتائج.</div>
+        <div id="personNote" class="muted" style="margin-top:6px">—</div>
+        <textarea id="personMsg" rows="8" style="margin-top:8px;" readonly></textarea>
       </div>
+    </section>
 
-      <div class="bulk-input-grid" style="margin-top:12px">
-        <textarea id="bulkIds" placeholder="ألصق عدة IDs (سطر لكل ID أو مفصولة بمسافات)"></textarea>
-        <div class="bulk-actions-column">
-          <button id="bulkPasteBtn" class="btn-blue">لصق ثم بحث</button>
-          <button id="bulkExecuteBtn" class="btn-red" disabled>تنفيذ الكل</button>
-          <button id="bulkResetBtn" class="btn-ghost">إعادة تعيين</button>
-          <button id="bulkCopyAllBtn" class="btn-ghost" disabled>نسخ الكل</button>
-          <button id="bulkCopySalaryBtn" class="btn-ghost" disabled>نسخ الراتب فقط</button>
+    <section id="bulkView" class="view-panel">
+      <div class="card span2" id="bulkCard">
+        <h3>أداة البحث الجماعي</h3>
+        <div class="bulk-note" id="bulkStatusText">ألصق IDs وسيتم التحليل تلقائيًا.</div>
+
+        <div class="row" style="gap:12px; flex-wrap:wrap; align-items:flex-end">
+          <div style="flex:1; min-width:180px">
+            <label class="small">النطاق</label>
+            <select id="bulkScope">
+              <option value="agent">الوكيل فقط</option>
+              <option value="both" selected>الإدارة + الوكيل</option>
+              <option value="all">الكل (يشمل الخارجي)</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:220px">
+            <label class="small">ورقة الهدف</label>
+            <div class="row" style="gap:6px; align-items:center">
+              <select id="bulkTargetSheet" style="flex:1"></select>
+              <button id="bulkRefreshSheets" class="btn-ghost" title="تحديث قائمة الأوراق" style="flex:0 0 auto">↻</button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="bulk-progress">
-        <div id="bulkProgressBar" class="bulk-progress-bar"></div>
-      </div>
-      <div class="bulk-progress-text">
-        <span id="bulkProgressLabel">0%</span>
-        <span id="bulkSummaryText"></span>
-      </div>
-
-      <div class="bulk-counters">
-        <div>عدد الإدخالات: <b id="bulkCountTotal">0</b></div>
-        <div>ملوّن: <b id="bulkCountColored">0</b></div>
-        <div>غير ملوّن: <b id="bulkCountUncolored">0</b></div>
-        <div>مجموع الرواتب: <b id="bulkSalarySum">0</b></div>
-      </div>
-
-      <table class="bulk-table" style="margin-top:12px">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>ID</th>
-            <th>الراتب</th>
-            <th>الحالة</th>
-            <th>ملوّن؟</th>
-          </tr>
-        </thead>
-        <tbody id="bulkResultsBody"></tbody>
-      </table>
-      <div id="bulkPagination" class="bulk-pagination">
-        <button id="bulkPrevBtn" class="bulk-page-btn">‹ السابق</button>
-        <span id="bulkPageInfo" class="bulk-page-info"></span>
-        <button id="bulkNextBtn" class="bulk-page-btn">التالي ›</button>
-      </div>
-      <div id="bulkEmptyState" class="bulk-empty">لا توجد نتائج بعد.</div>
-    </div>
-
-    <!-- ===== أدوات سريعة (بطاقات مستقلة، نفس الـ IDs القديمة) ===== -->
-<style>
-  /* شبكة مرتّبة للبطاقات، تتكيّف مع الموبايل */
-  #quickTools.qtools-wrap{
-    padding:0; background:transparent; border:0; box-shadow:none;
-  }
-  #qtGrid{
-    display:grid; gap:10px;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  }
-  #qtGrid .card{
-    margin:0; /* نمنع تكرار الهوامش */
-  }
-
-  /* عنوان صغير أنيق داخل كل بطاقة (اختياري) */
-  .qt-title{
-    font-size:14px; font-weight:800; margin:0 0 8px 0;
-  }
-
-  /* صف داخلي مرتب */
-  .qt-row{
-    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-  }
-
-  /* كبس زر صغير للعداد */
-  .qt-pill{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    border:1px solid var(--border); border-radius:12px; padding:8px 12px;
-  }
-
-  /* في الموبايل: عرض كامل تلقائي */
-  @media (max-width:1059px){
-    #qtGrid{ grid-template-columns: 1fr; }
-    .qt-row .btn-ghost, .qt-row button, .qt-row label{ width:100%; }
-    .qt-pill{ width:100%; justify-content:space-between; }
-  }
-</style>
-
-<div id="quickTools" class="qtools-wrap card span2">
-  <div id="qtGrid">
-
-    <!-- بطاقة: الوضع -->
-    <div class="card" id="qtModeCard">
-      <div class="qt-title">الوضع</div>
-      <div class="qt-row">
-        <button id="qtMode" class="btn-ghost">🌙 تفعيل الوضع الداكن</button>
-      </div>
-    </div>
-
-    <!-- بطاقة: إخفاء التحميل -->
-    <div class="card" id="qtHideLoadCard">
-      <div class="qt-title">التحميل</div>
-      <div class="qt-row">
-        <button id="qtHideLoad" class="btn-ghost">🙈 إخفاء قسم التحميل</button>
-      </div>
-    </div>
-
-    <!-- بطاقة: قسم البيانات -->
-    <div class="card" id="qtPersonCard">
-      <div class="qt-title">قسم البيانات</div>
-      <div class="qt-row" style="gap:8px">
-        <button id="qtHidePerson" class="btn-ghost">🙈 إخفاء قسم البيانات</button>
-        <label class="ios-toggle" style="margin-inline-start:6px">
-          <span class="switch-label">تعطيل قسم البيانات</span>
-          <input id="qtDisablePerson" type="checkbox">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <!-- بطاقة: العدّاد -->
-    <div class="card" id="qtCounterCard">
-      <div class="qt-title">العدّاد</div>
-      <div class="qt-row">
-        <div class="qt-pill" style="flex:1">
-          <span class="muted">الملوّن:</span><b id="qtColored">—</b>
-          <span style="width:10px"></span>
-          <span class="muted">غير الملوّن:</span><b id="qtUncolored">—</b>
+        <div class="row stretch" style="margin-top:10px">
+          <input id="bulkNewSheet" type="text" placeholder="اسم ورقة جديدة (داخل الإدارة)">
+          <button id="bulkCreateSheet" class="btn-ghost">إنشاء ورقة</button>
         </div>
-        <button id="qtRefreshCnt" class="btn-ghost" title="تحديث العدّاد">↻ تحديث</button>
+
+        <div id="bulkExternalWrap" style="margin-top:12px; display:none">
+          <label class="small" style="display:block">ورقة الهدف (خارجي) <span id="bulkExternalFileLabel" class="muted"></span></label>
+          <div class="row" style="gap:6px; align-items:center">
+            <select id="bulkExternalTargetSheet" style="flex:1"></select>
+            <button id="bulkExternalRefreshSheets" class="btn-ghost" title="تحديث قائمة الأوراق الخارجية" style="flex:0 0 auto">↻</button>
+          </div>
+          <div class="row stretch" style="margin-top:8px">
+            <input id="bulkExternalNewSheet" type="text" placeholder="اسم ورقة جديدة (خارجية)">
+            <button id="bulkExternalCreateSheet" class="btn-ghost">إنشاء</button>
+          </div>
+          <div id="bulkExternalNote" class="muted" style="margin-top:6px"></div>
+        </div>
+
+        <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap">
+          <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:180px">
+            <input id="bulkAdminColor" type="color" value="#fde68a" style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
+            <label class="small" style="margin:0">لون الإدارة</label>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:180px">
+            <input id="bulkWithdrawColor" type="color" value="#ddd6fe" style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
+            <label class="small" style="margin:0">لون الوكيل / سحب الوكالة</label>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px; align-items:center; gap:12px; flex-wrap:wrap">
+          <div class="row" style="gap:8px; align-items:center">
+            <label class="small" style="margin:0">الخصم %</label>
+            <input id="bulkDiscount" type="number" min="0" max="100" value="0" step="1" style="width:110px">
+          </div>
+          <div class="muted" id="bulkDiscountNote">يُطبّق تلقائيًا على النتائج.</div>
+        </div>
+
+        <div class="bulk-input-grid" style="margin-top:12px">
+          <textarea id="bulkIds" placeholder="ألصق عدة IDs (سطر لكل ID أو مفصولة بمسافات)"></textarea>
+          <div class="bulk-actions-column">
+            <button id="bulkPasteBtn" class="btn-blue">لصق ثم بحث</button>
+            <button id="bulkExecuteBtn" class="btn-red" disabled>تنفيذ الكل</button>
+            <button id="bulkResetBtn" class="btn-ghost">إعادة تعيين</button>
+            <button id="bulkCopyAllBtn" class="btn-ghost" disabled>نسخ الكل</button>
+            <button id="bulkCopySalaryBtn" class="btn-ghost" disabled>نسخ الراتب فقط</button>
+          </div>
+        </div>
+
+        <div class="bulk-progress">
+          <div id="bulkProgressBar" class="bulk-progress-bar"></div>
+        </div>
+        <div class="bulk-progress-text">
+          <span id="bulkProgressLabel">0%</span>
+          <span id="bulkSummaryText"></span>
+        </div>
+
+        <div class="bulk-counters">
+          <div>عدد الإدخالات: <b id="bulkCountTotal">0</b></div>
+          <div>ملوّن: <b id="bulkCountColored">0</b></div>
+          <div>غير ملوّن: <b id="bulkCountUncolored">0</b></div>
+          <div>مجموع الرواتب: <b id="bulkSalarySum">0</b></div>
+        </div>
+
+        <table class="bulk-table" style="margin-top:12px">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ID</th>
+              <th>الراتب</th>
+              <th>الحالة</th>
+              <th>ملوّن؟</th>
+            </tr>
+          </thead>
+          <tbody id="bulkResultsBody"></tbody>
+        </table>
+        <div id="bulkPagination" class="bulk-pagination">
+          <button id="bulkPrevBtn" class="bulk-page-btn">‹ السابق</button>
+          <span id="bulkPageInfo" class="bulk-page-info"></span>
+          <button id="bulkNextBtn" class="bulk-page-btn">التالي ›</button>
+        </div>
+        <div id="bulkEmptyState" class="bulk-empty">لا توجد نتائج بعد.</div>
       </div>
-    </div>
+    </section>
   </div>
 
-  </div>
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+  <aside id="quickTools" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <span class="drawer-title">القائمة</span>
+      <button id="drawerClose" class="drawer-close" type="button" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="drawer-items">
+      <button id="menuReload" class="drawer-item primary" type="button">تحميل البيانات</button>
+      <button id="menuHome" class="drawer-item" type="button">الصفحة الرئيسية</button>
+      <button id="menuBulk" class="drawer-item" type="button">أداة البحث الجماعي</button>
+      <div class="drawer-toggle">
+        <span>الوضع الداكن</span>
+        <button id="qtMode" type="button" aria-label="تبديل الوضع"></button>
+      </div>
+    </div>
+    <div class="hidden-tools">
+      <button id="qtHideLoad" type="button"></button>
+      <button id="qtHidePerson" type="button"></button>
+      <label><input id="qtDisablePerson" type="checkbox"></label>
+      <button id="qtRefreshCnt" type="button"></button>
+    </div>
+  </aside>
 
   <script>
     // عناصر عامة
@@ -552,6 +523,18 @@ const advCard  = document.getElementById('advCard');
     const copyMsgBtn   = document.getElementById('copyMsgBtn');
     const colorAllBtn  = document.getElementById('colorAllBtn');
 
+    // عناصر واجهة العرض والقائمة
+    const menuToggleBtn   = document.getElementById('menuToggle');
+    const drawerEl        = document.getElementById('quickTools');
+    const drawerCloseBtn  = document.getElementById('drawerClose');
+    const drawerBackdrop  = document.getElementById('drawerBackdrop');
+    const menuReloadBtn   = document.getElementById('menuReload');
+    const menuHomeBtn     = document.getElementById('menuHome');
+    const menuBulkBtn     = document.getElementById('menuBulk');
+    const viewTabs        = Array.from(document.querySelectorAll('.view-tab'));
+    const mainViewEl      = document.getElementById('mainView');
+    const bulkViewEl      = document.getElementById('bulkView');
+
     // آخر ID
     const lastIdPill = document.getElementById('lastIdPill');
     const lastIdText = document.getElementById('lastIdText');
@@ -564,6 +547,59 @@ const advCard  = document.getElementById('advCard');
 
     const qtHidePerson = document.getElementById('qtHidePerson');
     const qtDisablePerson = document.getElementById('qtDisablePerson');
+
+    function setDrawerState(open){
+      if (!drawerEl) return;
+      const shouldOpen = !!open;
+      drawerEl.classList.toggle('open', shouldOpen);
+      drawerEl.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+      if (drawerBackdrop) drawerBackdrop.classList.toggle('show', shouldOpen);
+      document.body.classList.toggle('drawer-open', shouldOpen);
+    }
+
+    function closeDrawer(){ setDrawerState(false); }
+    function toggleDrawer(){
+      if (!drawerEl) return;
+      setDrawerState(!drawerEl.classList.contains('open'));
+    }
+
+    if (menuToggleBtn) menuToggleBtn.addEventListener('click', toggleDrawer);
+    if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
+    if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+
+    const viewsMap = { main: mainViewEl, bulk: bulkViewEl };
+
+    function activateView(name){
+      const key = viewsMap[name] ? name : 'main';
+      viewTabs.forEach(btn => {
+        const isActive = (btn.dataset.view || 'main') === key;
+        btn.classList.toggle('active', isActive);
+      });
+      Object.entries(viewsMap).forEach(([viewKey, el]) => {
+        if (el) el.classList.toggle('active', viewKey === key);
+      });
+      try { localStorage.setItem('active_view', key); } catch(_) {}
+      closeDrawer();
+    }
+
+    if (viewTabs.length){
+      viewTabs.forEach(btn => btn.addEventListener('click', () => activateView(btn.dataset.view || 'main')));
+      let savedView = null;
+      try { savedView = localStorage.getItem('active_view'); } catch(_) {}
+      activateView(savedView && viewsMap[savedView] ? savedView : 'main');
+    } else {
+      activateView('main');
+    }
+
+    if (menuHomeBtn) menuHomeBtn.addEventListener('click', () => activateView('main'));
+    if (menuBulkBtn) menuBulkBtn.addEventListener('click', () => activateView('bulk'));
+    if (menuReloadBtn) menuReloadBtn.addEventListener('click', () => {
+      closeDrawer();
+      if (reloadBtn) reloadBtn.click();
+    });
+    document.addEventListener('keydown', evt => {
+      if (evt.key === 'Escape') closeDrawer();
+    });
 
     // حالة
     let localMap = null;
@@ -1860,126 +1896,16 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
       setTimeout(refreshCountsLive, 600);
     });
   </script>
-  <style>
-@media (max-width: 1059px){
-  #quickTools{
-    grid-column: 1 / -1;
-    grid-row: 999;
-    margin-top: 12px;
-  }
-}
-</style>
-<script>
-(function(){
-  function placeQT(){
-    var qt = document.getElementById('quickTools');
-    var cont = document.querySelector('.container');
-    if(!qt || !cont) return;
-    var w = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
-    if (w <= 1059) cont.appendChild(qt);
-  }
-  window.addEventListener('load', placeQT);
-  window.addEventListener('resize', function(){
-    clearTimeout(window.__qt_fix);
-    window.__qt_fix = setTimeout(placeQT, 150);
-  });
-})();
-</script>
-<style>
-/* تحسين تنسيق قسم التنفيذ على الشاشات الصغيرة */
-@media (max-width: 640px){
-  /* خلي صفوف القسم قابلة للّف */
-  #advCard .row{ flex-wrap: wrap !important; }
-
-  /* صف (الهدف + التنفيذ + تحديث) */
-  #advCard .row:first-of-type label.small{
-    width: 100% !important;
-    min-width: 0 !important;
-    display: block;
-    margin: 0 0 6px 0 !important;
-    font-size: 12px;
-    opacity: .9;
-  }
-  #advCard #sheetSelect,
-  #advCard #targetMode{
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    height: 40px;
-  }
-  #advCard #refreshSheetsBtn{
-    order: 3;                /* نزّله تحت الحقول */
-    width: 100%;
-    margin-top: 6px;
-  }
-
-  /* صف الألوان (لون الإدارة / سحب وكالة) */
-  #advCard .row[style*="flex-wrap:wrap"] > div{
-    flex: 1 1 100% !important;
-  }
-  #advCard input[type="color"]{
-    width: 40px !important;
-    height: 34px !important;
-  }
-
-  /* صف إنشاء ورقة جديدة */
-  #advCard #newSheetName{
-    flex: 1 1 100% !important;
-    width: 100% !important;
-  }
-  #advCard #createSheetBtn{
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    margin-top: 6px;
-  }
-
-  /* صف الخصم + السويتشات */
-  #advCard input[type="number"]{
-    width: 100% !important;
-    flex: 1 1 100% !important;
-    height: 40px;
-  }
-  #advCard .toggle-chip{
-    flex: 1 1 48% !important;
-    justify-content: space-between;
-    margin-top: 6px;
-  }
-
-  /* زر التنفيذ: مهو كامل أصلاً، نزود راحة على الموبايل */
-  #advCard #advRunBtn{
-    padding: 14px 16px !important;
-    font-size: 16px !important;
-    border-radius: 12px !important;
-  }
-
-  /* ملاحظات التنفيذ يظهر واضح وتحت الزر */
-  #advCard #advNote{ font-size: 12px; line-height: 1.4; }
-}
-</style>
-
-<script>
-/* ترتيب بسيط: ضمن الموبايل، حط زر التحديث بعد القائمتين دائماً */
-(function(){
-  function fixAdvLayout(){
-    var w = Math.min(window.innerWidth, document.documentElement.clientWidth||window.innerWidth);
-    if (w > 640) return;
-    var row = document.querySelector('#advCard .row');
-    var btn = document.getElementById('refreshSheetsBtn');
-    if(row && btn) row.appendChild(btn);
-  }
-  window.addEventListener('load', fixAdvLayout);
-  window.addEventListener('resize', function(){ clearTimeout(window.__advFix); window.__advFix=setTimeout(fixAdvLayout,150); });
-})();
-</script>
+  
 <!-- ===== /Bulk IDs — Advanced ===== -->
 <!-- شارة حالة الإنترنت (فحص ذكي، لا يمنع التنفيذ عند البطء) -->
 <style>
-  #netBadge{position:fixed;inset-inline-end:12px;inset-block-end:12px;z-index:9999;padding:6px 10px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.15);background:#e5fbe5;border:1px solid #c6f6c6;color:#0b1020;display:flex;align-items:center;gap:6px}
-  #netBadge.net-weak{background:#fff8e5;border-color:#ffe7a8;color:#6b4e00}
-  #netBadge.net-down{background:#ffe5e5;border-color:#ffc2c2;color:#6b0000}
-  #netBadge .dot{width:8px;height:8px;border-radius:50%;background:#16a34a}
-  #netBadge.net-weak .dot{background:#f59e0b}
-  #netBadge.net-down .dot{background:#ef4444}
+  #netBadge{position:fixed;inset-inline-end:18px;inset-block-end:18px;z-index:9999;padding:8px 12px;border-radius:14px;font-size:12px;font-weight:700;box-shadow:0 18px 48px rgba(0,0,0,.38);background:var(--surface-strong);border:1px solid rgba(255,255,255,.12);color:var(--text);display:flex;align-items:center;gap:8px;backdrop-filter:blur(12px);}
+  #netBadge.net-weak{background:rgba(255,209,102,.12);border-color:rgba(255,209,102,.32);color:#ffd27f;}
+  #netBadge.net-down{background:rgba(255,93,117,.16);border-color:rgba(255,93,117,.32);color:#ff9aad;}
+  #netBadge .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(43,255,168,.6);}
+  #netBadge.net-weak .dot{background:#ffd166;box-shadow:0 0 8px rgba(255,209,102,.6);}
+  #netBadge.net-down .dot{background:#ff5d75;box-shadow:0 0 8px rgba(255,93,117,.6);}
 </style>
 <div id="netBadge"><span class="dot"></span><span id="netText">فحص الاتصال…</span></div>
 
@@ -2327,125 +2253,7 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
 <?!= HtmlService.createHtmlOutputFromFile('AIClient').getContent(); ?>
 </script>
 <!-- ✅ ترتيب موحّد + تثبيت الأدوات السريعة + تنسيق صف البحث -->
-<style id="unified_mobile_layout">
-  @media (max-width:1200px){
-    .container{
-      display:grid !important;
-      grid-template-columns:1fr !important;
-      grid-template-areas:
-        "load"
-        "results"
-        "search"
-        "exec"
-        "person"
-        "quick";
-      gap:14px !important;
-    }
-
-    /* اربط المناطق */
-    #loadCard   { grid-area: load    !important; }
-    #resultsBox { grid-area: results !important; }
-    #searchCard { grid-area: search  !important; }
-    #execCard   { grid-area: exec    !important; }
-    #personCard { grid-area: person  !important; }
-    #quickTools { grid-area: quick   !important; }
-
-    /* خفّف الكروت على الموبايل */
-    .card{
-      background:transparent !important;
-      border:0 !important;
-      box-shadow:none !important;
-      border-radius:12px !important;
-      padding:12px !important;
-      margin:0 !important;
-    }
-
-    /* البحث: حقل + زر اللصق جنب بعض */
-    #searchCard .row,
-    #searchCard .row.stretch{
-      display:grid !important;
-      grid-template-columns:1fr auto !important;
-      column-gap:8px !important;
-      align-items:stretch !important;
-      width:100% !important;
-    }
-    #idInput{
-      width:100% !important; 
-      min-height:44px !important; 
-      font-size:16px !important;
-    }
-    #pasteSearchBtn{
-      height:44px !important; 
-      min-width:130px !important; 
-      white-space:nowrap !important; 
-      font-weight:700 !important;
-    }
-  }
-</style>
-
-<script>
-/* ✅ JS داعم: يضمن وضع #quickTools بعد #personCard (إن كان ظاهر) وإلا بعد #execCard + يثبت زر اللصق بجانب الحقل */
-(function(){
-  var IDS = { results:'resultsBox', search:'searchCard', exec:'execCard', person:'personCard', quick:'quickTools' };
-
-  function $(id){ return document.getElementById(id); }
-  function visible(el){
-    if (!el) return false;
-    var cs = getComputedStyle(el);
-    return el.offsetParent !== null && cs.display!=='none' && cs.visibility!=='hidden' && cs.opacity!=='0';
-  }
-
-  function placeQuickTools(){
-    var qt = $(IDS.quick), exec = $(IDS.exec), person = $(IDS.person);
-    if (!qt || !exec) return;
-
-    var anchor = (person && visible(person)) ? person : exec;
-    var parent = anchor.parentNode;
-
-    // انقل quickTools لنفس الأب ثم ضعه بعد الـ anchor
-    if (qt.parentNode !== parent) parent.appendChild(qt);
-    if (qt.previousElementSibling !== anchor) parent.insertBefore(qt, anchor.nextSibling);
-
-    // ضبط قياسات لطيفة
-    qt.style.maxWidth = '780px';
-    qt.style.width    = '100%';
-    qt.style.margin   = '12px auto';
-  }
-
-  function fixSearchRow(){
-    var sc = $(IDS.search);
-    if (!sc) return;
-    // تأكد أن زر اللصق أخ للحقل داخل نفس صف .row
-    var input = sc.querySelector('#idInput');
-    var btn   = document.getElementById('pasteSearchBtn');
-    var row   = sc.querySelector('.row') || sc.querySelector('.row.stretch') || sc;
-    if (input && btn && row && btn.parentNode !== row){
-      row.appendChild(btn);
-    }
-    // فرض الشبكة (احتياط لو كسرت قواعد سابقة)
-    row.style.display = 'grid';
-    row.style.gridTemplateColumns = '1fr auto';
-    row.style.columnGap = '8px';
-    row.style.alignItems = 'stretch';
-  }
-
-  function run(){
-    placeQuickTools();
-    fixSearchRow();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run);
-  } else {
-    run();
-  }
-
-  // راقب أي تغيّر وأعد الترتيب تلقائيًا
-  var obs = new MutationObserver(run);
-  obs.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class'] });
-  window.addEventListener('resize', run);
-})();
-</script>
+ 
 <script>
 (function(){
   if (typeof renderResult !== 'function') return;
