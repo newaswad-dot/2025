@@ -1945,6 +1945,11 @@ function bulkExecuteExact(ids, config) {
           colorRowsFast_(extTargetSh, extTargetColorBucket[color], color);
         }
       }
+      if (extTargetColorBucket && extTargetSh) {
+        for (const color in extTargetColorBucket) {
+          colorRowsFast_(extTargetSh, extTargetColorBucket[color], color);
+        }
+      }
     }
 
     SpreadsheetApp.flush();
