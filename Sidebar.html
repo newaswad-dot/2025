@@ -133,6 +133,42 @@
     #statusChipsRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
     #statusChipsRow .chip{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);font-size:11px;color:var(--muted);}
     .view-panel footer{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;}
+
+    @media(min-width:1024px){
+      body{padding:42px 0;}
+      .app-shell{max-width:1260px;width:min(1260px,calc(100vw - 120px));padding:40px 48px;gap:26px;}
+      .app-header{padding-inline-end:8px;}
+      .header-meta{flex-wrap:nowrap;gap:18px;}
+      .view-switch{justify-content:flex-start;gap:16px;}
+      .view-tab{max-width:240px;}
+      .view-panel{gap:22px;}
+      #mainView.view-panel.active{display:grid;grid-template-columns:minmax(320px,360px) minmax(0,1fr);grid-template-areas:
+        'results adv'
+        'search adv'
+        'load adv'
+        'bulkToggle adv'
+        'bulkMount adv'
+        'person adv';
+        align-items:start;gap:22px 28px;
+      }
+      #resultsBox{grid-area:results;}
+      #searchCard{grid-area:search;}
+      #loadCard{grid-area:load;}
+      #bulkToggleCard{grid-area:bulkToggle;}
+      #bulkMobileMount{grid-area:bulkMount;}
+      #personCard{grid-area:person;}
+      #advCard{grid-area:adv;align-self:start;min-height:100%;}
+      #advCard .pill-group{flex-wrap:wrap;}
+      #advCard .pill{flex:1 1 200px;}
+      #advCard .row.stretch>*,#advCard .row.stretch>button{flex:1;}
+      #loadCard button{width:100%;}
+      #bulkView.view-panel.active{display:flex;}
+      #bulkCard{padding:28px 32px;}
+      .bulk-input-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px;align-items:start;}
+      .bulk-input-grid textarea{min-height:320px;}
+      .bulk-actions-column{display:flex;flex-direction:column;gap:12px;}
+      .bulk-progress,.bulk-progress-text,.bulk-counters,.bulk-pagination{max-width:none;}
+    }
   </style>
 </head>
 <body class="dark">
