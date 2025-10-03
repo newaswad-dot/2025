@@ -989,7 +989,7 @@ function copyOneAdminRowToTarget(adRows, colorHex){
 }
 
 /*****************************
- * القائمة + العرض
+ * العرض (تم إلغاء القائمة)
  *****************************/
 function getAdminSheets(){
   const cfg = getConfig_();
@@ -1007,12 +1007,8 @@ function createAdminSheet(name){
 }
 
 function onOpen() {
-  try {
-    SpreadsheetApp.getUi()
-      .createMenu('أداة البحث المتقدم')
-      .addItem('🚀 فتح الأداة', 'showSidebar')
-      .addToUi();
-  } catch (_) {}
+  // تم إلغاء إنشاء القائمة المخصصة بناءً على الطلب،
+  // لذلك نترك الدالة بدون أي تنفيذ.
 }
 
 function showSidebar() {
