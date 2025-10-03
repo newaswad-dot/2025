@@ -7,57 +7,23 @@
   <title>أداة البحث</title>
   <style>
     :root{
-      color-scheme:dark light;
-      --bg-dark:#05080f;
-      --surface-dark:#0f151f;
-      --surface-soft-dark:#121b27;
-      --surface-strong-dark:#182234;
-      --text-dark:#e8f7ff;
-      --text-strong-dark:#ffffff;
-      --muted-dark:#7f8ba5;
-      --border-dark:rgba(255,255,255,0.07);
-
-      --bg-light:#f2f5fb;
-      --surface-light:#ffffff;
-      --surface-soft-light:#f7f9fc;
-      --surface-strong-light:#edf1f8;
-      --text-light:#0f1622;
-      --text-strong-light:#04070c;
-      --muted-light:#5b6475;
-      --border-light:rgba(0,0,0,0.06);
-
+      color-scheme:dark;
+      --bg:#05080f;
+      --surface:#0f151f;
+      --surface-soft:#121b27;
+      --surface-strong:#182234;
       --accent:#2bffa8;
       --accent-strong:#1ddf8d;
       --accent-dim:rgba(43,255,168,0.14);
+      --muted:#7f8ba5;
+      --text:#e8f7ff;
+      --text-strong:#ffffff;
       --danger:#ff5d75;
       --warning:#ffd166;
-    }
-
-    body.dark{
-      color-scheme:dark;
-      --bg:var(--bg-dark);
-      --surface:var(--surface-dark);
-      --surface-soft:var(--surface-soft-dark);
-      --surface-strong:var(--surface-strong-dark);
-      --text:var(--text-dark);
-      --text-strong:var(--text-strong-dark);
-      --muted:var(--muted-dark);
-      --border:var(--border-dark);
-    }
-
-    body:not(.dark){
-      color-scheme:light;
-      --bg:var(--bg-light);
-      --surface:var(--surface-light);
-      --surface-soft:var(--surface-soft-light);
-      --surface-strong:var(--surface-strong-light);
-      --text:var(--text-light);
-      --text-strong:var(--text-strong-light);
-      --muted:var(--muted-light);
-      --border:var(--border-light);
+      --border:rgba(255,255,255,0.07);
     }
     *{box-sizing:border-box;font-family:'Tajawal','Cairo','Segoe UI',sans-serif;}
-    body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;transition:background .24s ease,color .24s ease;}
+    body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;}
     body.drawer-open{overflow:hidden;}
     body,button,input,select,textarea{font-size:15px;}
     body.dark{background:#020307;color:var(--text);}
@@ -280,9 +246,6 @@
             <input id="withdrawColor" type="color" value="#ddd6fe">
           </div>
         </div>
-        <div id="aiMountHere"></div>
-        <div id="afterAiHook"></div>
-      </div>
 
         <div class="row stretch">
           <input id="newSheetName" type="text" placeholder="اسم ورقة جديدة (داخل الإدارة)">
@@ -1222,42 +1185,6 @@ const advCard  = document.getElementById('advCard');
       }
     }
 
-    function resolveBulkSalary(res, discountApplied){
-      const primary = discountApplied ? (res.salaryAfterDiscount ?? res.salary) : (res.salaryAfterDiscount ?? res.salary);
-      const fallback = res.totalSalary ?? res.totalSalaryText ?? res.salaryText;
-      if (typeof primary === 'number' && Number.isFinite(primary)) return primary;
-      const numericPrimary = Number(primary);
-      if (Number.isFinite(numericPrimary)) return numericPrimary;
-      const numericFallback = Number(fallback);
-      if (Number.isFinite(numericFallback)) return numericFallback;
-      return fallback || 0;
-    }
-
-    function buildBulkRowText(res, mode, discountApplied){
-      const salaryValue = resolveBulkSalary(res || {}, discountApplied);
-      let salaryStr;
-      if (typeof salaryValue === 'number') {
-        salaryStr = Number.isFinite(salaryValue) ? salaryValue.toFixed(2) : '0.00';
-      } else {
-        salaryStr = String(salaryValue || '').trim();
-        if (!salaryStr) salaryStr = '0.00';
-      }
-      if (mode === 'salary') {
-        return salaryStr;
-      }
-      const stateParts = [];
-      if (res.state) stateParts.push(res.state);
-      if (res.duplicateLabel) stateParts.push(res.duplicateLabel);
-      if (Array.isArray(res.names) && res.names.length) {
-        const names = res.names.filter(Boolean).map(name => String(name).trim()).filter(Boolean);
-        if (names.length) stateParts.push(names.join('، '));
-      }
-      const stateText = stateParts.join(' • ');
-      const rowParts = [res.id || '', salaryStr];
-      if (stateText) rowParts.push(stateText);
-      return rowParts.join('\t');
-    }
-
     async function copyBulk(mode){
       if (!bulkExecuted || !bulkResults.length) {
         if (bulkStatusText) bulkStatusText.textContent = '⚠️ نفّذ التحليل والتطبيق أولًا.';
@@ -1265,7 +1192,13 @@ const advCard  = document.getElementById('advCard');
       }
       const discountPct = Math.max(0, Math.min(100, Number(bulkDiscount?.value) || 0));
       const discountApplied = discountPct > 0;
-      const rows = bulkResults.map(res => buildBulkRowText(res, mode, discountApplied));
+      const rows = bulkResults.map(res => {
+        const baseSalaryRaw = discountApplied ? (res.salaryAfterDiscount ?? res.salary) : res.salary;
+        const salaryVal = Number(baseSalaryRaw || 0);
+        const salaryStr = salaryVal.toFixed(2);
+        if (mode === 'salary') return salaryStr;
+        return [res.id || '', salaryStr, res.state || ''].join('\t');
+      });
       const text = rows.join('\n');
       try {
         await navigator.clipboard.writeText(text);
@@ -1278,9 +1211,6 @@ const advCard  = document.getElementById('advCard');
         document.body.appendChild(helper);
         helper.focus();
         helper.select();
-        if (typeof helper.setSelectionRange === 'function') {
-          helper.setSelectionRange(0, helper.value.length);
-        }
         try {
           document.execCommand('copy');
           if (bulkStatusText) bulkStatusText.textContent = '✅ تم النسخ (وضع احتياطي).';
@@ -1781,30 +1711,17 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
         .withFailureHandler(()=>{ qtColored.textContent='—'; qtUncolored.textContent='—'; })
         .getLiveStatsForFooter(pct);
     }
-    function applyModeLabel(isDark){
-      if (qtMode) qtMode.textContent = isDark ? '☀️ وضع فاتح' : '🌙 وضع داكن';
+    function applyModeLabel(){
+      const isDark = document.body.classList.contains('dark');
+      qtMode.textContent = isDark ? '☀️ وضع فاتح' : '🌙 وضع داكن';
     }
-    function setDarkMode(isDark){
-      document.body.classList.toggle('dark', isDark);
-      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-      applyModeLabel(isDark);
-    }
-    (function initMode(){
-      let stored = null;
-      try { stored = localStorage.getItem('darkMode'); } catch(_){}
-      if (stored === 'false') {
-        setDarkMode(false);
-      } else {
-        setDarkMode(true);
-      }
-    })();
-    if (qtMode) {
-      qtMode.addEventListener('click', ()=>{
-        const next = !document.body.classList.contains('dark');
-        setDarkMode(next);
-        try { localStorage.setItem('darkMode', next ? 'true':'false'); } catch(_){}
-      });
-    }
+    try { if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark'); } catch(_){}
+    applyModeLabel();
+    qtMode.addEventListener('click', ()=>{
+      const isDark = document.body.classList.toggle('dark');
+      applyModeLabel();
+      try { localStorage.setItem('darkMode', isDark ? 'true':'false'); } catch(_){}
+    });
     function applyHideState(){
       const loadCard = document.getElementById('loadCard');
       const hide = (localStorage.getItem('hide_loadsec') === '1');
