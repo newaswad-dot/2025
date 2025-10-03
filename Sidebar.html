@@ -67,6 +67,7 @@
     .badge--loading{color:var(--muted);border-color:rgba(255,255,255,.08);}
     #nameText{font-size:15px;color:var(--muted);margin-bottom:8px;}
     #amountText{font-size:64px;font-weight:900;color:var(--accent);text-shadow:0 0 24px rgba(43,255,168,.45);margin-bottom:8px;}
+    #discountInfo{font-size:13px;color:var(--muted);margin-bottom:6px;min-height:18px;}
     #multiText{font-size:12px;color:var(--muted);letter-spacing:.4px;}
     #extraDupInfo{font-size:12px;color:var(--muted);margin-top:12px;}
     .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
@@ -113,6 +114,12 @@
     .drawer-item{background:var(--surface);border-radius:18px;padding:14px 16px;text-align:center;font-weight:700;letter-spacing:.4px;border:1px solid rgba(255,255,255,.04);color:var(--text);}
     .drawer-item.primary{background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:#04140d;box-shadow:0 14px 38px var(--accent-dim);}
     .drawer-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:18px;padding:12px 16px;border:1px solid rgba(255,255,255,.04);}
+    .drawer-section{margin-top:12px;padding:14px 16px;border-radius:18px;background:var(--surface);border:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;gap:10px;}
+    .drawer-section .small{margin:0;}
+    .drawer-discount-row{display:flex;align-items:center;gap:10px;}
+    .drawer-discount-row input{flex:1;}
+    .drawer-discount-value{min-width:90px;text-align:center;color:var(--muted);font-size:13px;font-weight:700;padding:10px 12px;border-radius:14px;background:var(--surface-strong);border:1px solid rgba(255,255,255,.06);}
+    .drawer-note{font-size:12px;color:var(--muted);line-height:1.5;}
     #qtMode{width:58px;height:30px;border-radius:999px;background:var(--surface-strong);position:relative;border:1px solid rgba(255,255,255,.12);padding:0;font-size:0;line-height:0;}
     #qtMode::after{content:'';position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35);transition:transform .2s ease,background .2s ease;}
     body.dark #qtMode{background:var(--accent);border-color:rgba(43,255,168,.32);}
@@ -201,6 +208,7 @@
         </div>
         <div id="nameText" class="subline">—</div>
         <div id="amountText" class="amountBig">—</div>
+        <div id="discountInfo" style="display:none"></div>
         <div id="multiText" class="subline"></div>
         <div id="extraDupInfo" class="muted" style="margin-top:12px"></div>
       </div>
@@ -428,6 +436,14 @@
         <span>الوضع الداكن</span>
         <button id="qtMode" type="button" aria-label="تبديل الوضع"></button>
       </div>
+      <div class="drawer-section">
+        <label class="small" for="menuDiscount">الخصم الفوري (%)</label>
+        <div class="drawer-discount-row">
+          <input id="menuDiscount" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="0">
+          <span id="menuDiscountValue" class="drawer-discount-value">بدون خصم</span>
+        </div>
+        <div class="drawer-note">يُطبّق مباشرة على نتيجة البحث الفردي.</div>
+      </div>
     </div>
     <div class="hidden-tools">
       <button id="qtHideLoad" type="button"></button>
@@ -450,6 +466,7 @@
     const statusBadge = document.getElementById('statusBadge');
     const dupBadge    = document.getElementById('dupBadge');
     const amountText  = document.getElementById('amountText');
+    const discountInfo= document.getElementById('discountInfo');
     const multiText   = document.getElementById('multiText');
     const extraDupInfo= document.getElementById('extraDupInfo');
     const justColored = Object.create(null);
@@ -515,6 +532,8 @@ const advCard  = document.getElementById('advCard');
     const discountInput = document.getElementById('discountInput');
     const applyDiscountToMessage = document.getElementById('applyDiscountToMessage');
     const enableSalaryCorrection = document.getElementById('enableSalaryCorrection');
+    const menuDiscountInput = document.getElementById('menuDiscount');
+    const menuDiscountValue = document.getElementById('menuDiscountValue');
 
     // بطاقة الشخص
     const personCardEl = document.getElementById('personCard');
@@ -622,6 +641,7 @@ const advCard  = document.getElementById('advCard');
     const BULK_PAGE_SIZE = 20;
     const BULK_MOBILE_STORAGE_KEY = 'bulk_mobile_enabled';
     const JUST_COLORED_TTL = 120000;
+    const SINGLE_DISCOUNT_STORAGE_KEY = 'single_discount_pct';
 
     try {
       bulkMobileEnabled = localStorage.getItem(BULK_MOBILE_STORAGE_KEY) === '1';
@@ -633,6 +653,30 @@ const advCard  = document.getElementById('advCard');
       const x = Number(n);
       return isNaN(x) ? '—' : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(x);
     };
+
+    const clampDiscountValue = (val) => {
+      const num = Number(val);
+      if (!isFinite(num)) return 0;
+      return Math.max(0, Math.min(100, num));
+    };
+
+    const formatDiscountValue = (val) => {
+      const num = Number(val);
+      if (!isFinite(num)) return '0';
+      const rounded = Math.round(num * 100) / 100;
+      return Number(rounded.toFixed(2)).toString();
+    };
+
+    function updateMenuDiscountUI(pct, options = {}){
+      const safe = clampDiscountValue(pct);
+      const formatted = formatDiscountValue(safe);
+      if (menuDiscountValue) {
+        menuDiscountValue.textContent = safe > 0 ? `${formatted}%` : 'بدون خصم';
+      }
+      if (menuDiscountInput && !options.skipInputUpdate) {
+        menuDiscountInput.value = formatted;
+      }
+    }
 
     const runServer = (fnName, ...args) => new Promise((resolve, reject) => {
       try {
@@ -1484,6 +1528,10 @@ const advCard  = document.getElementById('advCard');
       statusBadge.textContent = 'جارٍ البحث…';
       amountText.textContent = '⏳';
       multiText.textContent = '';
+      if (discountInfo){
+        discountInfo.textContent = '';
+        discountInfo.style.display = 'none';
+      }
       if (nameText) nameText.textContent = '—';
     }
     function applyBadges(baseStatus, duplicateLabel, hasSalaries){
@@ -1510,8 +1558,26 @@ const advCard  = document.getElementById('advCard');
           if (nameText) nameText.textContent = nm || '—';
         }catch(_){ if (nameText) nameText.textContent = '—'; }
       })();
-if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.textContent='—'; multiText.textContent=res.message||''; return; }
-      if (res.status === 'غير موجود'){ applyBadges('غير موجود', null, false); amountText.textContent='—'; multiText.textContent=''; return; }
+      if (res.status === 'error'){
+        applyBadges('خطأ', null, false);
+        amountText.textContent = '—';
+        multiText.textContent = res.message || '';
+        if (discountInfo){
+          discountInfo.textContent = '';
+          discountInfo.style.display = 'none';
+        }
+        return;
+      }
+      if (res.status === 'غير موجود'){
+        applyBadges('غير موجود', null, false);
+        amountText.textContent = '—';
+        multiText.textContent = '';
+        if (discountInfo){
+          discountInfo.textContent = '';
+          discountInfo.style.display = 'none';
+        }
+        return;
+      }
 
       const baseStatus = res.status || '';
       const dupLabel   = (res.isDuplicate && res.duplicateLabel) ? res.duplicateLabel : null;
@@ -1521,11 +1587,32 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
 
       applyBadges(baseStatus, dupLabel, hasSalaries);
 
-      if (isAdminOnly){ amountText.textContent='—'; multiText.textContent=''; flash(resultsBox,'flash-blue'); return; }
+      if (isAdminOnly){
+        amountText.textContent = '—';
+        multiText.textContent = '';
+        if (discountInfo){
+          discountInfo.textContent = '';
+          discountInfo.style.display = 'none';
+        }
+        flash(resultsBox,'flash-blue');
+        return;
+      }
 
-      const total = Number(res.totalSalary)||0;
-      const pct   = Math.max(0, Math.min(100, Number(discountInput.value)||0));
-      amountText.textContent = fmt(total * (1 - pct/100));
+      const total = Number(res.totalSalary) || 0;
+      const pct   = clampDiscountValue(discountInput?.value);
+      const discountedTotal = total * (1 - pct / 100);
+      amountText.textContent = fmt(discountedTotal);
+
+      if (discountInfo){
+        if (pct > 0 && total > 0){
+          const discountAmount = total - discountedTotal;
+          discountInfo.textContent = `قبل الخصم: ${fmt(total)} • خصم ${formatDiscountValue(pct)}%: ${fmt(discountAmount)}`;
+          discountInfo.style.display = '';
+        } else {
+          discountInfo.textContent = '';
+          discountInfo.style.display = 'none';
+        }
+      }
 
       if (hasSalaries && res.salaries.length > 1){
         multiText.textContent = '(' + res.salaries.map(n=>fmt(Number(n)||0)).join(' + ') + ')';
@@ -1537,7 +1624,7 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
     /******** الرسالة ********/
     function buildMessageText(card, applyDiscount, localMapRef){
       if (!card || !Array.isArray(card.ids)) return '—';
-      const pct = Math.max(0, Math.min(100, Number(discountInput.value)||0));
+      const pct = clampDiscountValue(discountInput?.value);
       const lm  = localMapRef || {};
       const header = [];
       if (card.name)    header.push(card.name);
@@ -1701,7 +1788,9 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
     /******** عداد / وضع داكن / إخفاء تحميل ********/
     function fmtNum(n){ const x=Number(n); return isNaN(x)?'—':new Intl.NumberFormat('en-US').format(x); }
     function refreshCountsLive(pctOverride){
-      const pct = (typeof pctOverride === 'number') ? pctOverride : Number(discountInput?.value || 0);
+      const pct = (typeof pctOverride === 'number')
+        ? clampDiscountValue(pctOverride)
+        : clampDiscountValue(discountInput?.value);
       google.script.run
         .withSuccessHandler(res=>{
           if(!res || !res.ok){ qtColored.textContent='—'; qtUncolored.textContent='—'; return; }
@@ -1784,6 +1873,10 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
     applyBadges('غير موجود', null, false);
     amountText.textContent = '—';
     multiText.textContent  = '';
+    if (discountInfo){
+      discountInfo.textContent = '';
+      discountInfo.style.display = 'none';
+    }
     personNote.textContent = '—';
     personMsg.value = '';
     clearDupUI();
@@ -1828,7 +1921,7 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
   // إذا غير موجود محليًا (قد يكون "إدارة فقط"): لا نعرض "غير موجود" — ننتظر رد السيرفر.
 
   const mySeq = (++window.__qseq || (window.__qseq=1));
-  const pct = Number(discountInput?.value || 0);
+  const pct = clampDiscountValue(discountInput?.value);
 
   google.script.run
     .withSuccessHandler(res=>{
@@ -1849,17 +1942,52 @@ if (res.status === 'error'){ applyBadges('خطأ', null, false); amountText.text
     // تحديث الخصم دون اتصالات
     (function(){
       if (!discountInput) return;
-      let t;
+
+      let initialValue = clampDiscountValue(discountInput.value);
+      try {
+        const stored = localStorage.getItem(SINGLE_DISCOUNT_STORAGE_KEY);
+        if (stored !== null && stored !== '') {
+          initialValue = clampDiscountValue(stored);
+        }
+      } catch (_) {}
+
+      discountInput.value = formatDiscountValue(initialValue);
+      updateMenuDiscountUI(initialValue);
+
+      let debounceTimer;
       discountInput.addEventListener('input', ()=>{
-        if (t) clearTimeout(t);
-        t = setTimeout(()=>{
+        const pct = clampDiscountValue(discountInput.value);
+        const formatted = formatDiscountValue(pct);
+        if (discountInput.value !== formatted) {
+          discountInput.value = formatted;
+        }
+        updateMenuDiscountUI(pct, { skipInputUpdate: document.activeElement === menuDiscountInput });
+        try { localStorage.setItem(SINGLE_DISCOUNT_STORAGE_KEY, formatted); } catch (_) {}
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(()=>{
           if (lastResult) renderResult(lastResult);
-          const pct = Math.max(0, Math.min(100, Number(discountInput.value)||0));
           refreshCountsLive(pct);
           if (applyDiscountToMessage?.checked && lastBaseId) rebuildPersonCardUsingLast();
         }, 120);
       });
     })();
+
+    if (menuDiscountInput){
+      menuDiscountInput.addEventListener('input', ()=>{
+        const pct = clampDiscountValue(menuDiscountInput.value);
+        const formatted = formatDiscountValue(pct);
+        if (menuDiscountInput.value !== formatted) {
+          menuDiscountInput.value = formatted;
+        }
+        updateMenuDiscountUI(pct, { skipInputUpdate: true });
+        if (discountInput){
+          if (discountInput.value !== formatted) {
+            discountInput.value = formatted;
+          }
+          discountInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+    }
 
     // مهيّئ سويتش "تصحيح الراتب"
     function initSalaryCorrectionSwitch(){
