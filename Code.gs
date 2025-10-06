@@ -88,6 +88,7 @@ function readSettingsSections_() {
       }
     }
 
+    // اسم القسم يُقرأ من العمود K (الخانة 11). يجب أن تحتوي الخلايا من K2 فصاعدًا على اسم واضح للقسم.
     let label = '';
     const displayLabel = labelDisplayValues.length > i ? String(labelDisplayValues[i] || '').trim() : '';
     const labelCell = row[10];

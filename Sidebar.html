@@ -576,6 +576,9 @@ const advCard  = document.getElementById('advCard');
     const menuBulkBtn     = document.getElementById('menuBulk');
     const menuSectionSelect = document.getElementById('menuSection');
     const menuSectionStatus = document.getElementById('menuSectionStatus');
+    if (menuSectionStatus) {
+      menuSectionStatus.textContent = '✳️ اكتب اسم كل قسم في العمود K (بدءًا من K2) داخل ورقة Settings. يمكن أن يكون العنوان في K1 مثل Sheet_month_name أو أي وصف تفضله.';
+    }
     const viewTabs        = Array.from(document.querySelectorAll('.view-tab'));
     const mainViewEl      = document.getElementById('mainView');
     const bulkViewEl      = document.getElementById('bulkView');
