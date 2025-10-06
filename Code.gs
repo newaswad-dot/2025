@@ -20,9 +20,15 @@ function readSettingsSections_() {
   const rangeWidth = Math.min(lastCol, 20);
   const rowsCount = lastRow - 1;
   const values = rowsCount > 0 ? sh.getRange(2, 1, rowsCount, rangeWidth).getValues() : [];
+  const hasLabelColumn = lastCol >= 11;
+  const labelDisplayValues = (rowsCount > 0 && hasLabelColumn)
+    ? sh.getRange(2, 11, rowsCount, 1).getDisplayValues().map(r => (r && r.length ? r[0] : ''))
+    : [];
 
   const sections = [];
   const map = Object.create(null);
+  const rowMap = Object.create(null);
+  const tz = (function(){ try { return Session.getScriptTimeZone() || 'UTC'; } catch (_) { return 'UTC'; } })();
 
   for (let i = 0; i < values.length; i++) {
     const row = values[i] || [];
@@ -83,32 +89,53 @@ function readSettingsSections_() {
     }
 
     let label = '';
-    for (let c = 10; c < row.length; c++) {
-      if (agentUrlSlot && (c === agentUrlSlot.index || c === agentUrlSlot.index + 1)) {
-        continue;
+    const displayLabel = labelDisplayValues.length > i ? String(labelDisplayValues[i] || '').trim() : '';
+    const labelCell = row[10];
+    if (displayLabel) {
+      label = displayLabel;
+    } else if (labelCell instanceof Date) {
+      try {
+        label = Utilities.formatDate(labelCell, tz, 'dd/MM/yyyy');
+      } catch (_) {
+        label = String(labelCell);
       }
-      const raw = String((row[c] || '')).trim();
-      if (!raw) continue;
-      if (normalizeSheetLink_(raw)) continue;
-      label = raw;
-      break;
+    } else {
+      label = String(labelCell || '').trim();
+    }
+    if (!label) {
+      for (let c = 10; c < row.length; c++) {
+        if (agentUrlSlot && (c === agentUrlSlot.index || c === agentUrlSlot.index + 1)) {
+          continue;
+        }
+        const raw = String((row[c] || '')).trim();
+        if (!raw) continue;
+        if (normalizeSheetLink_(raw)) continue;
+        label = raw;
+        break;
+      }
     }
     if (!label) {
       label = 'قسم ' + (sections.length + 1);
     }
 
-    const key = String(rowIndex);
+    const rowKey = String(rowIndex);
+    let key = label ? String(label) : rowKey;
+    if (!key) key = rowKey;
+    if (map[key]) key = rowKey;
+
     const entry = {
       key: key,
       label: label,
       rowIndex: rowIndex,
+      rowKey: rowKey,
       config: cfg
     };
     sections.push(entry);
     map[key] = entry;
+    rowMap[rowKey] = entry;
   }
 
-  return { sections: sections, map: map };
+  return { sections: sections, map: map, rowMap: rowMap };
 }
 
 function resolveActiveSectionKey_(preferredKey) {
@@ -119,13 +146,24 @@ function resolveActiveSectionKey_(preferredKey) {
 
   const userProps = PropertiesService.getUserProperties();
   let key = String(preferredKey || '').trim();
-  if (key && !data.map[key]) {
-    key = '';
+  if (key) {
+    if (!data.map[key] && data.rowMap && data.rowMap[key]) {
+      key = data.rowMap[key].key;
+    }
+    if (!data.map[key]) {
+      key = '';
+    }
   }
   if (!key && userProps) {
     const stored = String(userProps.getProperty(PROP_ACTIVE_SECTION) || '').trim();
-    if (stored && data.map[stored]) {
-      key = stored;
+    if (stored) {
+      let resolved = stored;
+      if (!data.map[resolved] && data.rowMap && data.rowMap[resolved]) {
+        resolved = data.rowMap[resolved].key;
+      }
+      if (data.map[resolved]) {
+        key = resolved;
+      }
     }
   }
   if (!key || !data.map[key]) {
@@ -179,20 +217,23 @@ function switchActiveSection(sectionKey) {
       throw new Error('⚠️ لم يتم إعداد أي قسم في ورقة Settings.');
     }
     const key = String(sectionKey || '').trim();
-    const entry = data.map[key];
+    let entry = data.map[key];
+    if (!entry && data.rowMap && data.rowMap[key]) {
+      entry = data.rowMap[key];
+    }
     if (!entry) {
       throw new Error('⚠️ القسم المحدد غير معروف.');
     }
     const userProps = PropertiesService.getUserProperties();
     if (userProps) {
-      userProps.setProperty(PROP_ACTIVE_SECTION, key);
+      userProps.setProperty(PROP_ACTIVE_SECTION, entry.key);
     }
 
     const loadResult = loadDataIntoCache();
     const snapshot = getSearchSnapshotLight();
     return {
       ok: true,
-      section: { key: key, label: entry.label },
+      section: { key: entry.key, label: entry.label },
       loadResult: loadResult,
       snapshot: snapshot
     };
