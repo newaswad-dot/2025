@@ -87,19 +87,6 @@
     #searchCard{background:var(--surface);border-radius:22px;box-shadow:none;border:1px solid rgba(255,255,255,.05);}
     #searchCard button{min-width:160px;}
     #searchCard .column button{width:100%;}
-    #nearbyBox{display:none;margin-top:12px;padding:16px;border-radius:18px;background:var(--surface-strong);border:1px solid var(--border);box-shadow:0 18px 42px rgba(8,14,26,.32);transition:transform .18s ease,opacity .18s ease;}
-    #nearbyBox.show{display:block;opacity:1;transform:translateY(0);}
-    #nearbyBox:not(.show){opacity:0;transform:translateY(6px);}
-    .nearby-header{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin-bottom:10px;}
-    .nearby-list{display:flex;flex-direction:column;gap:10px;}
-    .nearby-item{border:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-radius:14px;background:var(--surface);color:var(--text);font-weight:700;text-align:right;cursor:pointer;transition:background .18s ease,border .18s ease,transform .18s ease,box-shadow .18s ease;border:1px solid rgba(255,255,255,.06);box-shadow:0 12px 26px rgba(7,12,22,.28);}
-    .nearby-item:hover{background:rgba(43,255,168,.12);border-color:rgba(43,255,168,.24);}
-    .nearby-item:active{transform:scale(.985);}
-    .nearby-item--primary{background:linear-gradient(135deg,rgba(43,255,168,.18),rgba(56,189,248,.18));border-color:rgba(56,189,248,.34);box-shadow:0 14px 32px rgba(26,94,81,.35);}
-    .nearby-item--primary:hover{background:linear-gradient(135deg,rgba(43,255,168,.24),rgba(56,189,248,.24));}
-    .nearby-id{font-size:16px;font-variant-numeric:tabular-nums;color:var(--text-strong);}
-    .nearby-status{font-size:13px;color:var(--muted);margin-inline-start:auto;}
-    .nearby-diff{font-size:11px;color:rgba(226,232,240,.75);min-width:42px;text-align:left;direction:ltr;}
     #advCard{background:var(--surface);border-radius:26px;border:1px solid rgba(255,255,255,.05);box-shadow:none;display:flex;flex-direction:column;gap:16px;}
     #advCard .row{gap:10px;}
     #advCard select{background:var(--surface-strong);}
@@ -243,10 +230,6 @@
         <div class="column stretch">
           <input id="idInput" type="text" placeholder="أدخل ID هنا" autocomplete="off" inputmode="numeric">
           <button id="pasteSearchBtn" class="btn-blue" type="button">لصق ثم بحث</button>
-        </div>
-        <div id="nearbyBox">
-          <div class="nearby-header">أقرب IDs متاحة</div>
-          <div id="nearbyList" class="nearby-list"></div>
         </div>
         <div class="row" style="margin-top:8px;justify-content:space-between;">
           <div id="pasteHint" class="muted"></div>
@@ -495,8 +478,6 @@
     const idInput        = document.getElementById('idInput');
     const pasteSearchBtn = document.getElementById('pasteSearchBtn');
     const pasteHint      = document.getElementById('pasteHint');
-    const nearbyBox      = document.getElementById('nearbyBox');
-    const nearbyList     = document.getElementById('nearbyList');
     const headerSectionLabelEl = document.getElementById('headerSectionLabel');
     const sectionChipEl        = document.getElementById('sectionChip');
 
@@ -680,7 +661,6 @@ const advCard  = document.getElementById('advCard');
 
     // حالة
     let localMap = null;
-    let sortedLocalIds = [];
     let lastResult = null;
     let lastProfileIds = [];
     let lastBaseId = '';
@@ -890,99 +870,6 @@ const advCard  = document.getElementById('advCard');
     };
 
     const isMobileLayout = () => window.matchMedia('(max-width: 1200px)').matches;
-
-    function rebuildSortedLocalIds(){
-      if (!localMap || typeof localMap !== 'object'){ sortedLocalIds = []; return; }
-      const keys = Object.keys(localMap)
-        .filter(id => /^\d+$/.test(id));
-      keys.sort((a,b) => Number(a) - Number(b));
-      sortedLocalIds = keys;
-    }
-
-    function clearNearbySuggestions(){
-      if (!nearbyBox || !nearbyList) return;
-      nearbyList.innerHTML = '';
-      nearbyBox.classList.remove('show');
-      nearbyBox.style.display = 'none';
-    }
-
-    function getNearbySuggestions(id, limit = 5){
-      if (!sortedLocalIds.length) return [];
-      const target = Number(id);
-      if (!Number.isFinite(target)) return [];
-
-      let lo = 0;
-      let hi = sortedLocalIds.length;
-      while (lo < hi){
-        const mid = (lo + hi) >> 1;
-        const value = Number(sortedLocalIds[mid]);
-        if (value < target) lo = mid + 1;
-        else hi = mid;
-      }
-
-      let left = lo - 1;
-      let right = lo;
-      const picks = [];
-      const seen = new Set();
-
-      while (picks.length < limit && (left >= 0 || right < sortedLocalIds.length)){
-        const leftDiff = left >= 0 ? Math.abs(Number(sortedLocalIds[left]) - target) : Infinity;
-        const rightDiff = right < sortedLocalIds.length ? Math.abs(Number(sortedLocalIds[right]) - target) : Infinity;
-
-        if (leftDiff <= rightDiff){
-          const candidate = sortedLocalIds[left--];
-          if (candidate !== id && !seen.has(candidate)){
-            seen.add(candidate);
-            picks.push({ id: candidate, diff: leftDiff });
-          }
-        } else {
-          const candidate = sortedLocalIds[right++];
-          if (candidate !== id && !seen.has(candidate)){
-            seen.add(candidate);
-            picks.push({ id: candidate, diff: rightDiff });
-          }
-        }
-      }
-
-      return picks.map(entry => {
-        const base = buildLocalResult(entry.id);
-        return Object.assign({ diff: entry.diff }, base);
-      }).filter(item => item && item.status && item.status !== 'غير موجود');
-    }
-
-    function renderNearbySuggestions(id){
-      if (!nearbyBox || !nearbyList) return;
-      const cleanId = String(id || '').trim();
-      if (!cleanId){ clearNearbySuggestions(); return; }
-
-      const suggestions = getNearbySuggestions(cleanId, 5);
-      if (!suggestions.length){ clearNearbySuggestions(); return; }
-
-      nearbyList.innerHTML = '';
-      suggestions.forEach((suggestion, index) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'nearby-item' + (index === 0 ? ' nearby-item--primary' : '');
-        const diffLabel = Number.isFinite(suggestion.diff) && suggestion.diff > 0
-          ? `±${suggestion.diff}`
-          : '';
-        btn.innerHTML = `
-          <span class="nearby-status">${suggestion.status || ''}</span>
-          <span class="nearby-id">${suggestion.id || ''}</span>
-          <span class="nearby-diff">${diffLabel}</span>
-        `;
-        btn.addEventListener('click', () => {
-          idInput.value = suggestion.id || '';
-          clearTimeout(manualSearchTimer);
-          manualSearchTimer = null;
-          doSearch({ allowSuggestions:true });
-        });
-        nearbyList.appendChild(btn);
-      });
-
-      nearbyBox.style.display = 'block';
-      nearbyBox.classList.add('show');
-    }
 
     function markJustColored(ids, mode){
       const arr = Array.isArray(ids) ? ids : [ids];
@@ -1649,7 +1536,7 @@ const advCard  = document.getElementById('advCard');
       idInput.value = v;
       clearTimeout(manualSearchTimer);
       manualSearchTimer = null;
-      doSearch({ manual:true, allowSuggestions:false });
+      doSearch({ manual:true });
     });
 
     /******** تحميل الأوراق ********/
@@ -1691,7 +1578,6 @@ const advCard  = document.getElementById('advCard');
         return;
       }
       localMap = snapshot.map || null;
-      rebuildSortedLocalIds();
       const st = snapshot.stats || {};
       loadNote.textContent = `${baseMsg} | محلي: ${st.agentRows||0} صف / ${st.agentUnique||0} ID.`;
       setLoadBtnState(serverOk);
@@ -1818,7 +1704,7 @@ const advCard  = document.getElementById('advCard');
           idInput.value = txt.trim();
           clearTimeout(manualSearchTimer);
           manualSearchTimer = null;
-          doSearch({ manual:true, allowSuggestions:false });
+          doSearch({ manual:true });
           return;
         }
       }catch(_){}
@@ -1829,7 +1715,7 @@ const advCard  = document.getElementById('advCard');
         idInput.removeEventListener('input', once);
         skipNextManualDebounce = true;
         setTimeout(()=>{
-          doSearch({ manual:true, allowSuggestions:false });
+          doSearch({ manual:true });
           skipNextManualDebounce = false;
         }, 0);
       };
@@ -1840,7 +1726,7 @@ const advCard  = document.getElementById('advCard');
       setTimeout(()=>{
         clearTimeout(manualSearchTimer);
         manualSearchTimer = null;
-        doSearch({ manual:true, allowSuggestions:false });
+        doSearch({ manual:true });
         skipNextManualDebounce = false;
       }, 0);
     });
@@ -1848,7 +1734,7 @@ const advCard  = document.getElementById('advCard');
       if (e.key === 'Enter'){
         clearTimeout(manualSearchTimer);
         manualSearchTimer = null;
-        doSearch({ manual:true, allowSuggestions:false });
+        doSearch({ manual:true });
       }
     });
     idInput.addEventListener('input', ()=>{
@@ -1857,11 +1743,11 @@ const advCard  = document.getElementById('advCard');
       clearTimeout(manualSearchTimer);
       if (!val){
         manualSearchTimer = null;
-        doSearch({ manual:true, allowSuggestions:false });
+        doSearch({ manual:true });
         return;
       }
       manualSearchTimer = setTimeout(()=>{
-        doSearch({ manual:true, allowSuggestions:false });
+        doSearch({ manual:true });
       }, 140);
     });
 
@@ -2230,14 +2116,12 @@ const advCard  = document.getElementById('advCard');
       personNote.textContent = '—';
       personMsg.value = '';
       clearDupUI();
-      clearNearbySuggestions();
       return;
     }
 
     saveLastId(id);
     lastBaseId = id;
     renderLoading(); // أبقِ "جارٍ البحث…" كافتراضي
-    clearNearbySuggestions();
 
     const hasLocal = !!(localMap && Object.prototype.hasOwnProperty.call(localMap, id));
     if (hasLocal){
@@ -2269,11 +2153,6 @@ const advCard  = document.getElementById('advCard');
         isDuplicate,
         duplicateLabel
       });
-      clearNearbySuggestions();
-    }
-    // إذا غير موجود محليًا (قد يكون "إدارة فقط"): لا نعرض "غير موجود" — ننتظر رد السيرفر.
-    else if (allowSuggestions) {
-      renderNearbySuggestions(id);
     }
 
     const mySeq = (++window.__qseq || (window.__qseq=1));
@@ -2284,17 +2163,13 @@ const advCard  = document.getElementById('advCard');
         if (mySeq !== window.__qseq) return; // تجاهل الردود المتأخرة
         if (!res || res.status === 'error'){
           if (res && res.message) renderResult({ status:'error', message: res.message });
-          if (allowSuggestions) renderNearbySuggestions(id); else clearNearbySuggestions();
           return;
         }
         renderResult(res);
-        if (allowSuggestions && res.status === 'غير موجود') renderNearbySuggestions(id);
-        else clearNearbySuggestions();
         renderPersonCard(id);
       })
       .withFailureHandler(err=>{
         if (err && err.message) renderResult({ status:'error', message: err.message });
-        if (allowSuggestions) renderNearbySuggestions(id); else clearNearbySuggestions();
       })
       .searchId(id, pct);
   }
