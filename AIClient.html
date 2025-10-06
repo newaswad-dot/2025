@@ -143,18 +143,25 @@
       btn.type = 'button';
       btn.className = 'ai-suggest-item';
       const statusClass = statusClassFromText(item.status || '');
-      const idHtml = item.matchKind === 'id' ? highlight(item.id || '', lastQuery) : escapeHtml(item.id || '');
+      const treatAsNumeric = item.matchKind === 'id' || item.matchKind === 'id-fuzzy';
+      const idHtml = treatAsNumeric ? highlight(item.id || '', lastQuery) : escapeHtml(item.id || '');
       const nameQuery = item.matchKind === 'name' ? lastQuery : '';
       const displayName = item.primaryName ? highlight(item.primaryName, nameQuery) : '—';
-      const matchLabel = item.matchKind === 'name' && item.matchValue && item.matchValue !== item.primaryName
-        ? `<div class="ai-suggest-hint">${highlight(item.matchValue, lastQuery)}</div>`
-        : '';
+      let matchLabel = '';
+      if (item.matchKind === 'name' && item.matchValue && item.matchValue !== item.primaryName) {
+        matchLabel = `<div class="ai-suggest-hint">${highlight(item.matchValue, lastQuery)}</div>`;
+      } else if (item.matchNote) {
+        matchLabel = `<div class="ai-suggest-hint">${escapeHtml(item.matchNote)}</div>`;
+      }
       const totalLabel = numberFormatter.format(Number(item.totalSalary || 0));
       const chips = [];
       chips.push(`<span class="ai-suggest-chip ${item.colored ? 'ai-suggest-chip--colored' : 'ai-suggest-chip--plain'}">${item.colored ? 'ملوّن' : 'غير ملوّن'}</span>`);
       if (item.rowsCount > 1) chips.push('<span class="ai-suggest-chip">راتبين</span>');
       if (item.duplicateLabel) chips.push(`<span class="ai-suggest-chip ai-suggest-chip--dup">${escapeHtml(item.duplicateLabel)}</span>`);
-      chips.push('<span class="ai-suggest-chip ai-suggest-chip--hint">' + (item.matchKind === 'name' ? 'مطابقة بالاسم' : 'مطابقة بالرقم') + '</span>');
+      const hintLabel = item.matchKind === 'name'
+        ? 'مطابقة بالاسم'
+        : (item.matchKind === 'id-fuzzy' ? 'مطابقة ذكية' : 'مطابقة بالرقم');
+      chips.push('<span class="ai-suggest-chip ai-suggest-chip--hint">' + hintLabel + '</span>');
 
       btn.innerHTML = `
         <div class="ai-suggest-top">

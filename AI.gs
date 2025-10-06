@@ -1,3 +1,55 @@
+function levenshteinDistanceLimited_(a, b, maxDistance) {
+  const s = String(a || '');
+  const t = String(b || '');
+  if (s === t) return 0;
+  const m = s.length;
+  const n = t.length;
+  if (!m) return n <= maxDistance ? n : maxDistance + 1;
+  if (!n) return m <= maxDistance ? m : maxDistance + 1;
+  if (Math.abs(m - n) > maxDistance) return maxDistance + 1;
+
+  let prev = new Array(n + 1);
+  let curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    let rowMin = curr[0];
+    const sChar = s.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      const tChar = t.charAt(j - 1);
+      const cost = sChar === tChar ? 0 : 1;
+      const insertion = curr[j - 1] + 1;
+      const deletion = prev[j] + 1;
+      const substitution = prev[j - 1] + cost;
+      const val = Math.min(insertion, deletion, substitution);
+      curr[j] = val;
+      if (val < rowMin) rowMin = val;
+    }
+    if (rowMin > maxDistance) return maxDistance + 1;
+    const swap = prev;
+    prev = curr;
+    curr = swap;
+  }
+  return prev[n];
+}
+
+function describeNumericDifference_(id, query, distance) {
+  if (!(distance > 0)) return '';
+  const lenDiff = id.length - query.length;
+  if (distance === 1) {
+    if (lenDiff === 0) return 'مطابقة ذكية: يختلف برقم واحد.';
+    if (lenDiff > 0) return 'مطابقة ذكية: يحتوي على رقم زائد واحد.';
+    return 'مطابقة ذكية: ينقصه رقم واحد.';
+  }
+  if (distance === 2) {
+    if (lenDiff === 0) return 'مطابقة ذكية: يختلف برقمين.';
+    if (lenDiff > 0) return 'مطابقة ذكية: يحتوي على رقمين زائدين.';
+    return 'مطابقة ذكية: ينقصه رقمين.';
+  }
+  return 'مطابقة ذكية.';
+}
+
 function aiSuggestIds(query, limit) {
   try {
     const rawQuery = String(query || '').trim();
@@ -33,12 +85,14 @@ function aiSuggestIds(query, limit) {
       const matchKind = meta && meta.matchKind ? meta.matchKind : (numericQuery ? 'id' : 'name');
       const score = Number(meta && meta.score);
       const matchValue = String(meta && meta.matchValue ? meta.matchValue : '');
+      const matchNote = String(meta && meta.matchNote ? meta.matchNote : '');
       const existing = suggestions.get(key);
       if (existing) {
         if (isFinite(score) && score < existing.score) {
           existing.score = score;
           existing.matchKind = matchKind;
           existing.matchValue = matchValue;
+          existing.matchNote = matchNote;
         }
         if (!existing.node && node) existing.node = node;
         return;
@@ -49,6 +103,7 @@ function aiSuggestIds(query, limit) {
         score: isFinite(score) ? score : 9999,
         matchKind: matchKind,
         matchValue: matchValue,
+        matchNote: matchNote,
         adminOnly: !!(meta && meta.adminOnly)
       });
     }
@@ -93,6 +148,30 @@ function aiSuggestIds(query, limit) {
         const score = (idx === 0 ? 1 : 3) + Math.abs(id.length - rawQuery.length) * 0.02 + i * 0.0001;
         addCandidate(id, agentIndex[id] || null, { score, matchKind: 'id', matchValue: id, adminOnly: !agentIndex[id] });
       }
+      const fuzzyIds = new Set(agentKeys.concat(adminKeys));
+      let fuzzyIndex = 0;
+      fuzzyIds.forEach(id => {
+        if (!id || suggestions.has(id)) {
+          fuzzyIndex++;
+          return;
+        }
+        const distance = levenshteinDistanceLimited_(id, rawQuery, 2);
+        if (distance > 2) {
+          fuzzyIndex++;
+          return;
+        }
+        const lenDiff = Math.abs(id.length - rawQuery.length);
+        const score = 6 + distance * 1.5 + lenDiff * 0.4 + fuzzyIndex * 0.0002;
+        const note = describeNumericDifference_(id, rawQuery, distance);
+        addCandidate(id, agentIndex[id] || null, {
+          score: score,
+          matchKind: 'id-fuzzy',
+          matchValue: rawQuery,
+          matchNote: note,
+          adminOnly: !agentIndex[id] && !!adminIdSet[id]
+        });
+        fuzzyIndex++;
+      });
     } else {
       const groupKeys = Object.keys(infoGroups || {});
       for (let i = 0; i < groupKeys.length; i++) {
@@ -177,6 +256,7 @@ function aiSuggestIds(query, limit) {
         rowsCount: rowsCount,
         matchKind: entry.matchKind,
         matchValue: entry.matchValue || '',
+        matchNote: entry.matchNote || '',
         primaryName: primaryName,
         inAgent: inAgent,
         inAdmin: inAdmin,
@@ -184,12 +264,12 @@ function aiSuggestIds(query, limit) {
       });
     });
 
+    const matchOrder = { 'id': 0, 'id-fuzzy': 1, 'name': 2 };
     items.sort((a, b) => {
       if (a.score !== b.score) return a.score - b.score;
-      if (a.matchKind !== b.matchKind) {
-        if (a.matchKind === 'id') return -1;
-        if (b.matchKind === 'id') return 1;
-      }
+      const aOrder = matchOrder.hasOwnProperty(a.matchKind) ? matchOrder[a.matchKind] : 3;
+      const bOrder = matchOrder.hasOwnProperty(b.matchKind) ? matchOrder[b.matchKind] : 3;
+      if (aOrder !== bOrder) return aOrder - bOrder;
       if (a.rowsCount !== b.rowsCount) return b.rowsCount - a.rowsCount;
       return a.id.localeCompare(b.id, 'ar');
     });
