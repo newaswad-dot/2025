@@ -2104,6 +2104,7 @@ const advCard  = document.getElementById('advCard');
 
   function doSearch(options = {}){
     const id = String(idInput.value||'').trim();
+    const allowSuggestions = options && options.allowSuggestions !== false;
     if (!id){
       applyBadges('غير موجود', null, false);
       amountText.textContent = '—';
