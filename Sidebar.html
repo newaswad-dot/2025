@@ -1354,7 +1354,9 @@ const advCard  = document.getElementById('advCard');
         const salaryVal = Number(baseSalaryRaw || 0);
         const salaryStr = salaryVal.toFixed(2);
         if (mode === 'salary') return salaryStr;
-        return [res.id || '', salaryStr, res.state || ''].join('\t');
+        const stateText = res.state || '';
+        const duplicateText = res.duplicateLabel ? `${stateText ? ' - ' : ''}${res.duplicateLabel}` : '';
+        return [res.id || '', salaryStr, `${stateText}${duplicateText}`.trim()].join('\t');
       });
       const text = rows.join('\n');
       const successMessage = copyingDuringRun
