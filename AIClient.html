@@ -1,0 +1,112 @@
+<style>
+/* غلاف بسيط حول خانة البحث لنقدر نثبت البوبوفر بجانبها */
+#aiWrap{
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* صندوق الاقتراحات */
+#aiSuggestList{
+  display:none;
+  position:absolute;
+  z-index: 1000;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:0 10px 24px rgba(0,0,0,.08);
+  overflow:auto;
+  max-height: 260px;
+}
+
+/* على الجوال: تحت حقل البحث بعرضه */
+@media (max-width: 700px){
+  #aiSuggestList{
+    inset-inline: 0;
+    top: 100%;
+    margin-top: 6px;
+  }
+}
+
+/* على الشاشات الأوسع: بجانب الحقل (على جهة النهاية المنطقية) */
+@media (min-width: 701px){
+  #aiSuggestList{
+    top: 0;
+    inset-inline-start: calc(100% + 8px); /* بجانب الحقل مباشرة */
+    width: 240px;
+  }
+}
+
+#aiSuggestList button{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  padding:10px 12px;
+  border:0;
+  background:#fff;
+  cursor:pointer;
+  font-size:14px;
+  direction: rtl;
+}
+#aiSuggestList button:hover{ background:#f8fafc; }
+#aiSuggestList .src{ font-size:12px; color:#6b7280; margin-inline-start:8px }
+</style>
+
+<div id="aiHook"></div>
+
+<script>
+(function(){
+  var input = document.getElementById('idInput');
+  var hook  = document.getElementById('aiHook');
+  if (!input || !hook) return;
+
+  // لفّ خانة البحث بغلاف دون لمس الـHTML الأصلي
+  var wrap = document.createElement('div');
+  wrap.id = 'aiWrap';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+
+  // أنشئ صندوق الاقتراحات
+  var list = document.createElement('div');
+  list.id = 'aiSuggestList';
+  wrap.appendChild(list);
+
+  function hide(){ list.style.display='none'; list.innerHTML=''; }
+  function show(items){
+    list.innerHTML = '';
+    items.forEach(function(it){
+      var btn = document.createElement('button');
+      btn.innerHTML = '<span>'+it.id+'</span><span class="src">'+it.source+'</span>';
+      btn.addEventListener('click', function(){
+        input.value = it.id;
+        hide();
+        try{ if (typeof doSearch === 'function') doSearch(); }catch(_){}
+      });
+      list.appendChild(btn);
+    });
+    list.style.display = items.length ? 'block' : 'none';
+  }
+
+  // طلب الاقتراحات فقط عند الحاجة
+  var t;
+  input.addEventListener('input', function(){
+    var v = (input.value||'').trim();
+    if (!v || v.length < 3){ hide(); return; }
+    clearTimeout(t);
+    t = setTimeout(function(){
+      google.script.run
+        .withSuccessHandler(function(res){ if (res && res.ok) show(res.items||[]); })
+        .withFailureHandler(function(){ hide(); })
+        .aiSuggestIds(v, 5);
+    }, 180);
+  });
+
+  // إغلاق لطيف
+  input.addEventListener('blur', function(){ setTimeout(hide, 150); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') hide();
+  });
+})();
+</script>
