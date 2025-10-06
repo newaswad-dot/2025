@@ -1,32 +1,190 @@
 /*****************************
  * إعدادات عامة + قراءة Settings
  *****************************/
-function getConfig_() {
+const PROP_ACTIVE_SECTION = 'activeSectionRow_v1';
+const PROP_CACHE_SECTION  = 'cacheSectionRow_v1';
+
+function readSettingsSections_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName("Settings");
-  if (!sh) throw new Error("❌ لم يتم العثور على ورقة Settings. أنشئ ورقة باسم Settings وضع القيم في الصف 2.");
+  const sh = ss.getSheetByName('Settings');
+  if (!sh) {
+    throw new Error('❌ لم يتم العثور على ورقة Settings. أنشئ ورقة باسم Settings وضع القيم في الصفوف المناسبة.');
+  }
 
-  // الصف2:
-  // A=AGENT_SHEET_ID, B=AGENT_SHEET_NAME, C=ADMIN_SHEET_ID, D=ADMIN_SHEET_NAME
-  // E=DATA1_ID, F=DATA1_NAME, G=DATA2_ID, H=DATA2_NAME  (اختياري)
-  const row = sh.getRange(2, 1, 1, 8).getValues()[0];
-  const cfg = {
-    AGENT_SHEET_ID:   String(row[0] || "").trim(),
-    AGENT_SHEET_NAME: String(row[1] || "").trim() || "SHEET",
-    ADMIN_SHEET_ID:   String(row[2] || "").trim(),
-    ADMIN_SHEET_NAME: String(row[3] || "").trim() || "Sheet1",
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) {
+    return { sections: [], map: {} };
+  }
 
-    DATA1_ID:         String(row[4] || "").trim(),
-    DATA1_NAME:       String(row[5] || "").trim() || "معلومات السلطان",
-    DATA2_ID:         String(row[6] || "").trim(),
-    DATA2_NAME:       String(row[7] || "").trim() || "معلومات الفرعيين",
-  };
-  const missing = [];
-  if (!cfg.AGENT_SHEET_ID)   missing.push("AGENT_SHEET_ID");
-  if (!cfg.AGENT_SHEET_NAME) missing.push("AGENT_SHEET_NAME");
-  if (!cfg.ADMIN_SHEET_ID)   missing.push("ADMIN_SHEET_ID");
-  if (!cfg.ADMIN_SHEET_NAME) missing.push("ADMIN_SHEET_NAME");
-  if (missing.length) throw new Error("⚠️ إعدادات ناقصة في Settings: " + missing.join(", "));
+  const rangeWidth = Math.min(lastCol, 20);
+  const rowsCount = lastRow - 1;
+  const values = rowsCount > 0 ? sh.getRange(2, 1, rowsCount, rangeWidth).getValues() : [];
+  const hasLabelColumn = lastCol >= 11;
+  const labelDisplayValues = (rowsCount > 0 && hasLabelColumn)
+    ? sh.getRange(2, 11, rowsCount, 1).getDisplayValues().map(r => (r && r.length ? r[0] : ''))
+    : [];
+
+  const sections = [];
+  const map = Object.create(null);
+  const rowMap = Object.create(null);
+  const tz = (function(){ try { return Session.getScriptTimeZone() || 'UTC'; } catch (_) { return 'UTC'; } })();
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i] || [];
+    const rowIndex = i + 2;
+    const agentSheetId = String((row[0] || '')).trim();
+    const adminSheetId = String((row[2] || '')).trim();
+    const hasData = agentSheetId || adminSheetId || String((row[1] || '')).trim() || String((row[3] || '')).trim();
+    if (!hasData) {
+      // تجاهل الصفوف الفارغة بالكامل
+      continue;
+    }
+
+    const cfg = {
+      AGENT_SHEET_ID:   agentSheetId,
+      AGENT_SHEET_NAME: String((row[1] || '')).trim() || 'SHEET',
+      ADMIN_SHEET_ID:   adminSheetId,
+      ADMIN_SHEET_NAME: String((row[3] || '')).trim() || 'Sheet1',
+      DATA1_ID:         String((row[4] || '')).trim(),
+      DATA1_NAME:       String((row[5] || '')).trim() || 'معلومات السلطان',
+      DATA2_ID:         String((row[6] || '')).trim(),
+      DATA2_NAME:       String((row[7] || '')).trim() || 'معلومات الفرعيين',
+      EXTERNAL_ADMIN_URL: '',
+      EXTERNAL_ADMIN_SHEET: '',
+      EXTERNAL_AGENT_URL: '',
+      EXTERNAL_AGENT_SHEET: ''
+    };
+
+    const missing = [];
+    if (!cfg.AGENT_SHEET_ID)   missing.push('AGENT_SHEET_ID');
+    if (!cfg.AGENT_SHEET_NAME) missing.push('AGENT_SHEET_NAME');
+    if (!cfg.ADMIN_SHEET_ID)   missing.push('ADMIN_SHEET_ID');
+    if (!cfg.ADMIN_SHEET_NAME) missing.push('ADMIN_SHEET_NAME');
+    if (missing.length) {
+      throw new Error('⚠️ إعدادات ناقصة في Settings (الصف ' + rowIndex + '): ' + missing.join(', '));
+    }
+
+    // روابط الملفات الخارجية (الإدارة والوكيل)
+    const adminUrl = normalizeSheetLink_(row[8]);
+    if (adminUrl) {
+      cfg.EXTERNAL_ADMIN_URL = adminUrl;
+      cfg.EXTERNAL_ADMIN_SHEET = String((row[9] || '')).trim();
+    }
+
+    let agentUrlSlot = null;
+    for (let c = 10; c < row.length; c++) {
+      const norm = normalizeSheetLink_(row[c]);
+      if (norm) {
+        agentUrlSlot = { index: c, url: norm };
+        break;
+      }
+    }
+    if (agentUrlSlot) {
+      cfg.EXTERNAL_AGENT_URL = agentUrlSlot.url;
+      const sheetIdx = agentUrlSlot.index + 1;
+      if (sheetIdx < row.length) {
+        cfg.EXTERNAL_AGENT_SHEET = String((row[sheetIdx] || '')).trim();
+      }
+    }
+
+    // اسم القسم يُقرأ من العمود K (الخانة 11). يجب أن تحتوي الخلايا من K2 فصاعدًا على اسم واضح للقسم.
+    let label = '';
+    const displayLabel = labelDisplayValues.length > i ? String(labelDisplayValues[i] || '').trim() : '';
+    const labelCell = row[10];
+    if (displayLabel) {
+      label = displayLabel;
+    } else if (labelCell instanceof Date) {
+      try {
+        label = Utilities.formatDate(labelCell, tz, 'dd/MM/yyyy');
+      } catch (_) {
+        label = String(labelCell);
+      }
+    } else {
+      label = String(labelCell || '').trim();
+    }
+    if (!label) {
+      for (let c = 10; c < row.length; c++) {
+        if (agentUrlSlot && (c === agentUrlSlot.index || c === agentUrlSlot.index + 1)) {
+          continue;
+        }
+        const raw = String((row[c] || '')).trim();
+        if (!raw) continue;
+        if (normalizeSheetLink_(raw)) continue;
+        label = raw;
+        break;
+      }
+    }
+    if (!label) {
+      label = 'قسم ' + (sections.length + 1);
+    }
+
+    const rowKey = String(rowIndex);
+    let key = label ? String(label) : rowKey;
+    if (!key) key = rowKey;
+    if (map[key]) key = rowKey;
+
+    const entry = {
+      key: key,
+      label: label,
+      rowIndex: rowIndex,
+      rowKey: rowKey,
+      config: cfg
+    };
+    sections.push(entry);
+    map[key] = entry;
+    rowMap[rowKey] = entry;
+  }
+
+  return { sections: sections, map: map, rowMap: rowMap };
+}
+
+function resolveActiveSectionKey_(preferredKey) {
+  const data = readSettingsSections_();
+  if (!data.sections.length) {
+    throw new Error('⚠️ لم يتم إعداد أي قسم في ورقة Settings.');
+  }
+
+  const userProps = PropertiesService.getUserProperties();
+  let key = String(preferredKey || '').trim();
+  if (key) {
+    if (!data.map[key] && data.rowMap && data.rowMap[key]) {
+      key = data.rowMap[key].key;
+    }
+    if (!data.map[key]) {
+      key = '';
+    }
+  }
+  if (!key && userProps) {
+    const stored = String(userProps.getProperty(PROP_ACTIVE_SECTION) || '').trim();
+    if (stored) {
+      let resolved = stored;
+      if (!data.map[resolved] && data.rowMap && data.rowMap[resolved]) {
+        resolved = data.rowMap[resolved].key;
+      }
+      if (data.map[resolved]) {
+        key = resolved;
+      }
+    }
+  }
+  if (!key || !data.map[key]) {
+    key = data.sections[0].key;
+  }
+  if (userProps) {
+    userProps.setProperty(PROP_ACTIVE_SECTION, key);
+  }
+  return { key: key, entry: data.map[key], listing: data.sections };
+}
+
+function getConfig_(options) {
+  const preferredKey = options && options.sectionKey;
+  const resolved = resolveActiveSectionKey_(preferredKey);
+  if (!resolved.entry) {
+    throw new Error('⚠️ لم يتم العثور على إعدادات القسم المحدد.');
+  }
+  const cfg = Object.assign({}, resolved.entry.config);
+  cfg.sectionKey = resolved.key;
+  cfg.sectionLabel = resolved.entry.label;
   return cfg;
 }
 
@@ -35,43 +193,70 @@ function getConfigStatus() {
   catch(e){ return { ok:false, message:e.message }; }
 }
 
+function getAvailableSections() {
+  try {
+    const data = readSettingsSections_();
+    if (!data.sections.length) {
+      throw new Error('⚠️ لم يتم العثور على أي أقسام في ورقة Settings.');
+    }
+    const cfg = getConfig_();
+    return {
+      ok: true,
+      sections: data.sections.map(s => ({ key: s.key, label: s.label })),
+      activeKey: cfg.sectionKey,
+      activeLabel: cfg.sectionLabel
+    };
+  } catch (e) {
+    return { ok:false, message:e.message };
+  }
+}
+
+function switchActiveSection(sectionKey) {
+  try {
+    const data = readSettingsSections_();
+    if (!data.sections.length) {
+      throw new Error('⚠️ لم يتم إعداد أي قسم في ورقة Settings.');
+    }
+    const key = String(sectionKey || '').trim();
+    let entry = data.map[key];
+    if (!entry && data.rowMap && data.rowMap[key]) {
+      entry = data.rowMap[key];
+    }
+    if (!entry) {
+      throw new Error('⚠️ القسم المحدد غير معروف.');
+    }
+    const userProps = PropertiesService.getUserProperties();
+    if (userProps) {
+      userProps.setProperty(PROP_ACTIVE_SECTION, entry.key);
+    }
+
+    const loadResult = loadDataIntoCache();
+    const snapshot = getSearchSnapshotLight();
+    return {
+      ok: true,
+      section: { key: entry.key, label: entry.label },
+      loadResult: loadResult,
+      snapshot: snapshot
+    };
+  } catch (e) {
+    return { ok:false, message:e.message };
+  }
+}
+
 function getExternalSheetLinksFromSettings() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName('Settings');
-  if (!sh) throw new Error('❌ لم يتم العثور على ورقة Settings.');
-
-  const lastRow = sh.getLastRow();
-  if (lastRow < 1) throw new Error('⚠️ لا توجد بيانات في ورقة Settings للروابط الخارجية.');
-
-  const data = sh.getRange(1, 9, lastRow, 4).getDisplayValues(); // I:J:K:L
-
-  const admin = { url: '', sheetName: '' };
-  const agent = { url: '', sheetName: '' };
-
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i];
-    if (!admin.url) {
-      const normalized = normalizeSheetLink_(row[0]);
-      if (normalized) {
-        admin.url = normalized;
-        admin.sheetName = String(row[1] || '').trim();
-      }
-    }
-    if (!agent.url) {
-      const normalized = normalizeSheetLink_(row[2]);
-      if (normalized) {
-        agent.url = normalized;
-        agent.sheetName = String(row[3] || '').trim();
-      }
-    }
-    if (admin.url && agent.url) break;
-  }
-
+  const cfg = getConfig_();
+  const admin = {
+    url: cfg.EXTERNAL_ADMIN_URL || '',
+    sheetName: cfg.EXTERNAL_ADMIN_SHEET || ''
+  };
+  const agent = {
+    url: cfg.EXTERNAL_AGENT_URL || '',
+    sheetName: cfg.EXTERNAL_AGENT_SHEET || ''
+  };
   if (!admin.url) {
-    throw new Error('⚠️ رابط ملف الإدارة الخارجي مفقود (تحقّق من العمود I في Settings).');
+    throw new Error('⚠️ رابط ملف الإدارة الخارجي مفقود في القسم الحالي (تحقّق من الأعمدة I-J).');
   }
-
-  return { admin, agent };
+  return { admin: admin, agent: agent };
 }
 
 /*****************************
@@ -92,6 +277,40 @@ const KEY_EXT_COLORED_ADMIN   = "extColoredAdmin_v2";
 // كاش معلومات الأشخاص:
 const KEY_INFO_ID2GROUP   = "info_id2group_v1"; // { id: groupKey }
 const KEY_INFO_GROUPS     = "info_groups_v1";   // { groupKey: {...} }
+
+/*****************************
+ * مفاتيح الكاش حسب القسم
+ *****************************/
+function normalizeSectionCacheKey_(sectionKey) {
+  const raw = String(sectionKey || '').trim();
+  if (!raw) return 'default';
+  const encoded = encodeURIComponent(raw).replace(/%/g, '_');
+  const normalized = encoded || 'default';
+  return normalized.length > 60 ? normalized.substring(0, 60) : normalized;
+}
+
+function qualifySectionCacheKey_(baseKey, sectionKey) {
+  const normalized = normalizeSectionCacheKey_(sectionKey);
+  const qualified = baseKey + '__' + normalized;
+  return qualified.length > 230 ? qualified.substring(0, 230) : qualified;
+}
+
+function getEffectiveSectionKey_(cfg) {
+  if (cfg && cfg.sectionKey) {
+    return String(cfg.sectionKey);
+  }
+  try {
+    const userProps = PropertiesService.getUserProperties();
+    const stored = userProps && userProps.getProperty(PROP_ACTIVE_SECTION);
+    if (stored) return stored;
+  } catch (_) {}
+  try {
+    const docProps = PropertiesService.getDocumentProperties();
+    const cached = docProps && docProps.getProperty(PROP_CACHE_SECTION);
+    if (cached) return cached;
+  } catch (_) {}
+  return '';
+}
 
 /********* أدوات chunk للكاش *********/
 function cachePutChunked_(keyPrefix, obj, cache) {
@@ -208,7 +427,7 @@ function computeExternalStats_(agentIndex, adminRowMap) {
   return { agentRows: agentRows, agentUnique: agentUnique, adminRows: adminRows };
 }
 
-function fetchAndCacheExternalData_(cache, cfg) {
+function fetchAndCacheExternalData_(cache, cfg, sectionKey) {
   const links = getExternalSheetLinksFromSettings();
   const adminInfo = links.admin || {};
   if (!adminInfo.url) {
@@ -297,11 +516,18 @@ function fetchAndCacheExternalData_(cache, cfg) {
     }
   }
 
-  cachePutChunked_(KEY_EXT_AGENT_INDEX, agentIndex, cache);
-  cachePutChunked_(KEY_EXT_ADMIN_IDSET, adminIdSet, cache);
-  cachePutChunked_(KEY_EXT_ADMIN_ROW_MAP, adminRowMap, cache);
-  cachePutChunked_(KEY_EXT_COLORED_AGENT, coloredAgent, cache);
-  cachePutChunked_(KEY_EXT_COLORED_ADMIN, coloredAdmin, cache);
+  const effectiveKey = getEffectiveSectionKey_(cfg) || sectionKey;
+  const agentKey = qualifySectionCacheKey_(KEY_EXT_AGENT_INDEX, effectiveKey);
+  const adminSetKey = qualifySectionCacheKey_(KEY_EXT_ADMIN_IDSET, effectiveKey);
+  const adminRowKey = qualifySectionCacheKey_(KEY_EXT_ADMIN_ROW_MAP, effectiveKey);
+  const coloredAgentKey = qualifySectionCacheKey_(KEY_EXT_COLORED_AGENT, effectiveKey);
+  const coloredAdminKey = qualifySectionCacheKey_(KEY_EXT_COLORED_ADMIN, effectiveKey);
+
+  cachePutChunked_(agentKey, agentIndex, cache);
+  cachePutChunked_(adminSetKey, adminIdSet, cache);
+  cachePutChunked_(adminRowKey, adminRowMap, cache);
+  cachePutChunked_(coloredAgentKey, coloredAgent, cache);
+  cachePutChunked_(coloredAdminKey, coloredAdmin, cache);
 
   const stats = computeExternalStats_(agentIndex, adminRowMap);
 
@@ -319,12 +545,20 @@ function fetchAndCacheExternalData_(cache, cfg) {
 
 function loadExternalData_(options) {
   options = options || {};
+  const cfg = getConfig_();
+  const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
   const cache = CacheService.getScriptCache();
-  let agentIndex = cacheGetChunked_(KEY_EXT_AGENT_INDEX, cache);
-  let adminIdSet = cacheGetChunked_(KEY_EXT_ADMIN_IDSET, cache);
-  let adminRowMap = cacheGetChunked_(KEY_EXT_ADMIN_ROW_MAP, cache);
-  let coloredAgent = cacheGetChunked_(KEY_EXT_COLORED_AGENT, cache);
-  let coloredAdmin = cacheGetChunked_(KEY_EXT_COLORED_ADMIN, cache);
+  const agentKey = qualifySectionCacheKey_(KEY_EXT_AGENT_INDEX, sectionKey);
+  const adminSetKey = qualifySectionCacheKey_(KEY_EXT_ADMIN_IDSET, sectionKey);
+  const adminRowKey = qualifySectionCacheKey_(KEY_EXT_ADMIN_ROW_MAP, sectionKey);
+  const coloredAgentKey = qualifySectionCacheKey_(KEY_EXT_COLORED_AGENT, sectionKey);
+  const coloredAdminKey = qualifySectionCacheKey_(KEY_EXT_COLORED_ADMIN, sectionKey);
+
+  let agentIndex = cacheGetChunked_(agentKey, cache);
+  let adminIdSet = cacheGetChunked_(adminSetKey, cache);
+  let adminRowMap = cacheGetChunked_(adminRowKey, cache);
+  let coloredAgent = cacheGetChunked_(coloredAgentKey, cache);
+  let coloredAdmin = cacheGetChunked_(coloredAdminKey, cache);
 
   const ready = !!(agentIndex && adminIdSet && adminRowMap && coloredAgent && coloredAdmin);
   if (ready && !options.forceReload) {
@@ -353,8 +587,7 @@ function loadExternalData_(options) {
     };
   }
 
-  const cfg = getConfig_();
-  return fetchAndCacheExternalData_(cache, cfg);
+  return fetchAndCacheExternalData_(cache, cfg, sectionKey);
 }
 
 /*****************************
@@ -542,6 +775,16 @@ function loadDataIntoCache() {
   try {
     const cache = CacheService.getScriptCache();
     const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
+    const agentIndexKey    = qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey);
+    const adminIdSetKey    = qualifySectionCacheKey_(KEY_ADMIN_IDSET, sectionKey);
+    const adminRowMapKey   = qualifySectionCacheKey_(KEY_ADMIN_ROW_MAP, sectionKey);
+    const coloredAgentKey  = qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey);
+    const coloredAdminKey  = qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey);
+    const corrMapKey       = qualifySectionCacheKey_(KEY_CORR_MAP, sectionKey);
+    const infoId2GroupKey  = qualifySectionCacheKey_(KEY_INFO_ID2GROUP, sectionKey);
+    const infoGroupsKey    = qualifySectionCacheKey_(KEY_INFO_GROUPS, sectionKey);
+    const sectionLabel = cfg.sectionLabel || 'القسم الحالي';
 
     // الوكيل
     const agSS = SpreadsheetApp.openById(cfg.AGENT_SHEET_ID);
@@ -588,14 +831,14 @@ function loadDataIntoCache() {
     const infoPacked = buildInfoGroups_(rows1, rows2); // { groups, id2group }
 
     // اكتب في الكاش (chunked)
-    cachePutChunked_(KEY_AGENT_INDEX,   agentIndex, cache);
-    cachePutChunked_(KEY_ADMIN_IDSET,   adminIdSet, cache);
-    cachePutChunked_(KEY_ADMIN_ROW_MAP, adminRowMap,cache);
-    cachePutChunked_(KEY_COLORED_AGENT, coloredAgent, cache);
-    cachePutChunked_(KEY_COLORED_ADMIN, coloredAdmin, cache);
-    cachePutChunked_(KEY_CORR_MAP,      corrMap,     cache);
-    cachePutChunked_(KEY_INFO_ID2GROUP, infoPacked.id2group, cache);
-    cachePutChunked_(KEY_INFO_GROUPS,   infoPacked.groups,   cache);
+    cachePutChunked_(agentIndexKey,   agentIndex, cache);
+    cachePutChunked_(adminIdSetKey,   adminIdSet, cache);
+    cachePutChunked_(adminRowMapKey,  adminRowMap,cache);
+    cachePutChunked_(coloredAgentKey, coloredAgent, cache);
+    cachePutChunked_(coloredAdminKey, coloredAdmin, cache);
+    cachePutChunked_(corrMapKey,      corrMap,     cache);
+    cachePutChunked_(infoId2GroupKey, infoPacked.id2group, cache);
+    cachePutChunked_(infoGroupsKey,   infoPacked.groups,   cache);
 
     // إحصاء بسيط
     let agentRows = 0;
@@ -615,9 +858,16 @@ function loadDataIntoCache() {
       externalSummary = ' — ⚠️ فشل تحميل الخارجي: ' + (extErr && extErr.message ? extErr.message : String(extErr || ''));
     }
 
+    try {
+      const docProps = PropertiesService.getDocumentProperties();
+      if (docProps && cfg.sectionKey) {
+        docProps.setProperty(PROP_CACHE_SECTION, String(cfg.sectionKey));
+      }
+    } catch (_) {}
+
     return {
       success:true,
-      message:'تم التحميل ✓ — الوكيل: '+agentRows+' صف / '+agentUnique+' ID فريد — الإدارة: '+adminRows+' صف.' + externalSummary
+      message:'[' + sectionLabel + '] تم التحميل ✓ — الوكيل: '+agentRows+' صف / '+agentUnique+' ID فريد — الإدارة: '+adminRows+' صف.' + externalSummary
     };
   } catch (e) {
     return { success:false, message:'خطأ: ' + e.message };
@@ -629,11 +879,13 @@ function loadDataIntoCache() {
  *****************************/
 function getSearchSnapshotLight() {
   try {
+    const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
     const cache = CacheService.getScriptCache();
-    const agentIndex   = cacheGetChunked_(KEY_AGENT_INDEX,   cache) || {};
-    const adminIdSet   = cacheGetChunked_(KEY_ADMIN_IDSET,   cache) || {};
-    const coloredAgent = cacheGetChunked_(KEY_COLORED_AGENT, cache) || {};
-    const coloredAdmin = cacheGetChunked_(KEY_COLORED_ADMIN, cache) || {};
+    const agentIndex   = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey),   cache) || {};
+    const adminIdSet   = cacheGetChunked_(qualifySectionCacheKey_(KEY_ADMIN_IDSET, sectionKey),   cache) || {};
+    const coloredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache) || {};
+    const coloredAdmin = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache) || {};
 
     const map = {};
     let agentRows = 0;
@@ -665,11 +917,13 @@ function searchId(id, discountPercentage) {
     if (!id) return { status:'error', message:'الرجاء إدخال ID للبحث.' };
     id = String(id).trim();
 
+    const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
     const cache = CacheService.getScriptCache();
-    const agentIndex   = cacheGetChunked_(KEY_AGENT_INDEX,   cache);
-    const adminIdSet   = cacheGetChunked_(KEY_ADMIN_IDSET,   cache);
-    const coloredAgent = cacheGetChunked_(KEY_COLORED_AGENT, cache);
-    const coloredAdmin = cacheGetChunked_(KEY_COLORED_ADMIN, cache);
+    const agentIndex   = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey),   cache);
+    const adminIdSet   = cacheGetChunked_(qualifySectionCacheKey_(KEY_ADMIN_IDSET, sectionKey),   cache);
+    const coloredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache);
+    const coloredAdmin = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache);
 
     if (!agentIndex || !adminIdSet || !coloredAgent || !coloredAdmin) {
       return { status:'error', message:'البيانات غير محمّلة. اضغط "تحميل البيانات".' };
@@ -745,9 +999,11 @@ function searchId(id, discountPercentage) {
 
 function getLiveStatsForFooter(discountPercentage) {
   try {
+    const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
     const cache = CacheService.getScriptCache();
-    const agentIndex   = cacheGetChunked_(KEY_AGENT_INDEX,   cache) || {};
-    const coloredAgent = cacheGetChunked_(KEY_COLORED_AGENT, cache) || {};
+    const agentIndex   = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey),   cache) || {};
+    const coloredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache) || {};
 
     let totalRowsWithIds = 0;
     let coloredRows = 0;
@@ -826,13 +1082,15 @@ function getPersonCardById(id) {
     id = String(id||'').trim();
     if (!id) return { ok:false, message:'أدخل ID' };
 
+    const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
     const cache = CacheService.getScriptCache();
-    const id2group   = cacheGetChunked_(KEY_INFO_ID2GROUP, cache) || {};
-    const groups     = cacheGetChunked_(KEY_INFO_GROUPS,   cache) || {};
-    const agentIndex = cacheGetChunked_(KEY_AGENT_INDEX,   cache) || {};
-    const corrMap    = cacheGetChunked_(KEY_CORR_MAP,      cache) || {};
-    const coloredAgent = cacheGetChunked_(KEY_COLORED_AGENT, cache) || {};
-    const coloredAdmin = cacheGetChunked_(KEY_COLORED_ADMIN, cache) || {};
+    const id2group   = cacheGetChunked_(qualifySectionCacheKey_(KEY_INFO_ID2GROUP, sectionKey), cache) || {};
+    const groups     = cacheGetChunked_(qualifySectionCacheKey_(KEY_INFO_GROUPS, sectionKey),   cache) || {};
+    const agentIndex = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey),   cache) || {};
+    const corrMap    = cacheGetChunked_(qualifySectionCacheKey_(KEY_CORR_MAP, sectionKey),      cache) || {};
+    const coloredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache) || {};
+    const coloredAdmin = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache) || {};
 
     if (!id2group || !groups || !agentIndex) {
       return { ok:false, message:'⚠️ البيانات غير محمّلة. اضغط "تحميل البيانات".' };
@@ -919,13 +1177,14 @@ function applyAdvancedAction(id, targetSheet, adminColor, withdrawColor, targetM
     const doAdminOps = (targetMode === 'both');     // "الإدارة + الوكيل"
     expandAllProfileIds = (expandAllProfileIds !== false); // افتراضي: يوسّع
 
-    const cache = CacheService.getScriptCache();
-    const agentIndex  = cacheGetChunked_(KEY_AGENT_INDEX,   cache) || {};
-    const adminRowMap = cacheGetChunked_(KEY_ADMIN_ROW_MAP, cache) || {};
-    let coloredAgent  = cacheGetChunked_(KEY_COLORED_AGENT, cache) || {};
-    let coloredAdmin  = cacheGetChunked_(KEY_COLORED_ADMIN, cache) || {};
-
     const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
+    const cache = CacheService.getScriptCache();
+    const agentIndex  = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey),   cache) || {};
+    const adminRowMap = cacheGetChunked_(qualifySectionCacheKey_(KEY_ADMIN_ROW_MAP, sectionKey), cache) || {};
+    let coloredAgent  = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache) || {};
+    let coloredAdmin  = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache) || {};
+
     const adSS = SpreadsheetApp.openById(cfg.ADMIN_SHEET_ID);
     const adSh = adSS.getSheetByName(cfg.ADMIN_SHEET_NAME);
 
@@ -1072,8 +1331,8 @@ function copyOneAdminRowToTarget(adRows, colorHex){
     });
 
     SpreadsheetApp.flush();
-    cachePutChunked_(KEY_COLORED_AGENT, coloredAgent, cache);
-    cachePutChunked_(KEY_COLORED_ADMIN, coloredAdmin, cache);
+    cachePutChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), coloredAgent, cache);
+    cachePutChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), coloredAdmin, cache);
 
     let msg = `✅ تم التنفيذ`;
     if (copied)        msg += ` — نُسخ ${copied} صف`;
@@ -1445,14 +1704,16 @@ function normalizeBulkScope_(scope) {
   return 'all';
 }
 
-function buildBulkContext_(scope) {
+function buildBulkContext_(scope, existingCfg) {
+  const cfg = existingCfg || getConfig_();
+  const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
   const cache = CacheService.getScriptCache();
-  const agentIndexRaw   = cacheGetChunked_(KEY_AGENT_INDEX,   cache);
-  const adminIdSetRaw   = cacheGetChunked_(KEY_ADMIN_IDSET,   cache);
-  const adminRowMapRaw  = cacheGetChunked_(KEY_ADMIN_ROW_MAP, cache);
-  const coloredAgentRaw = cacheGetChunked_(KEY_COLORED_AGENT, cache);
-  const coloredAdminRaw = cacheGetChunked_(KEY_COLORED_ADMIN, cache);
-  const corrMapRaw      = cacheGetChunked_(KEY_CORR_MAP,      cache);
+  const agentIndexRaw   = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey),   cache);
+  const adminIdSetRaw   = cacheGetChunked_(qualifySectionCacheKey_(KEY_ADMIN_IDSET, sectionKey),   cache);
+  const adminRowMapRaw  = cacheGetChunked_(qualifySectionCacheKey_(KEY_ADMIN_ROW_MAP, sectionKey), cache);
+  const coloredAgentRaw = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache);
+  const coloredAdminRaw = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache);
+  const corrMapRaw      = cacheGetChunked_(qualifySectionCacheKey_(KEY_CORR_MAP, sectionKey),      cache);
 
   const ctx = {
     agentIndex:   agentIndexRaw   || {},
@@ -1671,15 +1932,16 @@ function bulkExecuteExact(ids, config) {
     const doAdminOps = targetMode !== 'agent';
     const externalSheetName = includeExternal ? String(config.externalSheetName || '').trim() : '';
 
+    const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
     const cache = CacheService.getScriptCache();
-    const ctx = buildBulkContext_(includeExternal ? 'all' : 'both');
+    const ctx = buildBulkContext_(includeExternal ? 'all' : 'both', cfg);
     if (!ctx.hasCoreData) {
       throw new Error('⚠️ حمّل البيانات أولًا من زر "تحميل البيانات".');
     }
     if (includeExternal && !ctx.hasExternalData) {
       throw new Error('⚠️ حمّل البيانات الخارجية أولًا من زر "تحميل البيانات".');
     }
-    const cfg = getConfig_();
 
     const agSS = SpreadsheetApp.openById(cfg.AGENT_SHEET_ID);
     const agSh = agSS.getSheetByName(cfg.AGENT_SHEET_NAME);
@@ -1707,8 +1969,8 @@ function bulkExecuteExact(ids, config) {
     const withdrawColor = String(config.withdrawColor || config.color || '#ddd6fe');
     const adminColor    = String(config.adminColor    || config.color || '#fde68a');
 
-    const coloredAgent = cacheGetChunked_(KEY_COLORED_AGENT, cache) || {};
-    const coloredAdmin = cacheGetChunked_(KEY_COLORED_ADMIN, cache) || {};
+    const coloredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache) || {};
+    const coloredAdmin = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache) || {};
 
     const agentColorBucket = Object.create(null);
     const adminColorBucket = Object.create(null);
@@ -1745,7 +2007,7 @@ function bulkExecuteExact(ids, config) {
         if (sh) extAdSheets[sh.getName()] = sh;
       }
       extAdminColorBucket = Object.create(null);
-      extColoredAdmin = cacheGetChunked_(KEY_EXT_COLORED_ADMIN, cache) || {};
+      extColoredAdmin = cacheGetChunked_(qualifySectionCacheKey_(KEY_EXT_COLORED_ADMIN, sectionKey), cache) || {};
 
       const agentInfo = links.agent || {};
       if (agentInfo.url) {
@@ -1760,9 +2022,9 @@ function bulkExecuteExact(ids, config) {
           if (sh) extAgSheets[sh.getName()] = sh;
         }
         extAgentColorBucket = Object.create(null);
-        extColoredAgent = cacheGetChunked_(KEY_EXT_COLORED_AGENT, cache) || {};
+        extColoredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_EXT_COLORED_AGENT, sectionKey), cache) || {};
       } else {
-        extColoredAgent = cacheGetChunked_(KEY_EXT_COLORED_AGENT, cache) || {};
+        extColoredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_EXT_COLORED_AGENT, sectionKey), cache) || {};
       }
 
       if (externalSheetName) {
@@ -1954,11 +2216,11 @@ function bulkExecuteExact(ids, config) {
 
     SpreadsheetApp.flush();
 
-    cachePutChunked_(KEY_COLORED_AGENT, coloredAgent, cache);
-    cachePutChunked_(KEY_COLORED_ADMIN, coloredAdmin, cache);
+    cachePutChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), coloredAgent, cache);
+    cachePutChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), coloredAdmin, cache);
     if (includeExternal) {
-      cachePutChunked_(KEY_EXT_COLORED_AGENT, extColoredAgent, cache);
-      cachePutChunked_(KEY_EXT_COLORED_ADMIN, extColoredAdmin, cache);
+      cachePutChunked_(qualifySectionCacheKey_(KEY_EXT_COLORED_AGENT, sectionKey), extColoredAgent, cache);
+      cachePutChunked_(qualifySectionCacheKey_(KEY_EXT_COLORED_ADMIN, sectionKey), extColoredAdmin, cache);
     }
 
     return {

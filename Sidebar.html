@@ -44,10 +44,16 @@
     @media(min-width:520px){.app-shell{max-width:520px;}}
     .app-header{display:flex;align-items:center;gap:14px;}
     .hamburger{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border-radius:16px;background:var(--surface-strong);border:1px solid var(--border);color:var(--accent);box-shadow:0 10px 26px rgba(18,233,153,.18);}
-    .header-meta{display:flex;flex-direction:row;align-items:stretch;gap:12px;margin-inline-start:auto;flex-wrap:wrap;justify-content:flex-end;}
-    .counter-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface-strong);padding:10px 14px;border-radius:16px;min-width:98px;box-shadow:0 10px 28px rgba(23,30,44,.36);border:1px solid var(--border);}
-    .counter-pill .label{font-size:11px;color:var(--muted);letter-spacing:.4px;}
-    .counter-pill .value{font-size:18px;font-weight:800;color:var(--accent);}
+    .header-meta{margin-inline-start:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;}
+    .counter-cluster{display:flex;align-items:center;justify-content:center;gap:12px;background:var(--surface-strong);padding:10px 14px;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 30px rgba(16,26,44,.36);flex-wrap:wrap;}
+    .counter-mini{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:86px;padding:4px 0;flex:1 1 80px;}
+    .counter-mini .label{font-size:11px;color:var(--muted);letter-spacing:.4px;}
+    .counter-mini .value{font-size:16px;font-weight:800;color:var(--accent);}
+    .section-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid rgba(43,255,168,.26);background:rgba(43,255,168,.08);color:var(--accent);font-weight:700;white-space:nowrap;flex:0 0 auto;transition:background .18s ease,border .18s ease,color .18s ease;}
+    .section-chip .chip-label{font-size:11px;letter-spacing:.3px;color:var(--muted);}
+    .section-chip .chip-value{color:var(--text-strong);font-size:13px;}
+    .section-chip.is-empty{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);color:var(--muted);}
+    .section-chip.is-empty .chip-value{color:var(--muted);}
     .view-switch{display:flex;gap:10px;}
     .view-tab{flex:1;background:var(--surface);border:1px solid transparent;border-radius:16px;padding:12px 14px;color:var(--muted);font-weight:700;}
     .view-tab.active{background:linear-gradient(135deg,var(--surface-strong),#1c2537);color:var(--accent);border-color:rgba(43,255,168,.22);box-shadow:0 12px 32px rgba(26,214,145,.22);}
@@ -81,19 +87,6 @@
     #searchCard{background:var(--surface);border-radius:22px;box-shadow:none;border:1px solid rgba(255,255,255,.05);}
     #searchCard button{min-width:160px;}
     #searchCard .column button{width:100%;}
-    #nearbyBox{display:none;margin-top:12px;padding:14px 16px;border-radius:18px;background:rgba(15,23,34,0.9);border:1px solid rgba(43,255,168,.28);box-shadow:0 18px 42px rgba(14,146,112,.28);backdrop-filter:blur(18px);transition:transform .18s ease,opacity .18s ease;}
-    #nearbyBox.show{display:block;opacity:1;transform:translateY(0);}
-    #nearbyBox:not(.show){opacity:0;transform:translateY(4px);}
-    .nearby-header{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin-bottom:10px;}
-    .nearby-list{display:flex;flex-direction:column;gap:8px;}
-    .nearby-item{border:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 14px;border-radius:14px;background:rgba(43,255,168,.1);color:var(--text);font-weight:700;text-align:right;cursor:pointer;transition:background .18s ease,border .18s ease,transform .18s ease;box-shadow:0 12px 28px rgba(12,70,54,.25);border:1px solid rgba(43,255,168,.18);}
-    .nearby-item:hover{background:rgba(43,255,168,.18);border-color:rgba(43,255,168,.35);}
-    .nearby-item:active{transform:scale(.985);}
-    .nearby-item--primary{background:linear-gradient(135deg,rgba(43,255,168,.24),rgba(56,189,248,.24));border-color:rgba(56,189,248,.42);box-shadow:0 14px 34px rgba(43,255,168,.28);}
-    .nearby-item--primary:hover{background:linear-gradient(135deg,rgba(43,255,168,.32),rgba(56,189,248,.32));}
-    .nearby-id{font-size:16px;font-variant-numeric:tabular-nums;color:var(--text-strong);}
-    .nearby-status{font-size:13px;color:var(--muted);margin-inline-start:auto;}
-    .nearby-diff{font-size:11px;color:rgba(226,232,240,.75);min-width:42px;text-align:left;direction:ltr;}
     #advCard{background:var(--surface);border-radius:26px;border:1px solid rgba(255,255,255,.05);box-shadow:none;display:flex;flex-direction:column;gap:16px;}
     #advCard .row{gap:10px;}
     #advCard select{background:var(--surface-strong);}
@@ -196,13 +189,19 @@
     <header class="app-header">
       <button id="menuToggle" class="hamburger" type="button" aria-label="القائمة">☰</button>
       <div class="header-meta">
-        <div class="counter-pill">
-          <span class="label">ملوّن</span>
-          <span id="qtColored" class="value">—</span>
-        </div>
-        <div class="counter-pill">
-          <span class="label">غير ملوّن</span>
-          <span id="qtUncolored" class="value">—</span>
+        <div class="counter-cluster">
+          <div class="counter-mini">
+            <span class="label">ملوّن</span>
+            <span id="qtColored" class="value">—</span>
+          </div>
+          <div class="counter-mini">
+            <span class="label">غير ملوّن</span>
+            <span id="qtUncolored" class="value">—</span>
+          </div>
+          <div id="sectionChip" class="section-chip" title="القسم الحالي">
+            <span class="chip-label">القسم</span>
+            <span id="headerSectionLabel" class="chip-value">—</span>
+          </div>
         </div>
       </div>
     </header>
@@ -231,10 +230,6 @@
         <div class="column stretch">
           <input id="idInput" type="text" placeholder="أدخل ID هنا" autocomplete="off" inputmode="numeric">
           <button id="pasteSearchBtn" class="btn-blue" type="button">لصق ثم بحث</button>
-        </div>
-        <div id="nearbyBox">
-          <div class="nearby-header">أقرب IDs متاحة</div>
-          <div id="nearbyList" class="nearby-list"></div>
         </div>
         <div class="row" style="margin-top:8px;justify-content:space-between;">
           <div id="pasteHint" class="muted"></div>
@@ -449,6 +444,11 @@
       <button id="menuReload" class="drawer-item primary" type="button">تحميل البيانات</button>
       <button id="menuHome" class="drawer-item" type="button">الصفحة الرئيسية</button>
       <button id="menuBulk" class="drawer-item" type="button">أداة البحث الجماعي</button>
+      <div class="drawer-section">
+        <label class="small" for="menuSection">القسم الحالي</label>
+        <select id="menuSection"></select>
+        <div id="menuSectionStatus" class="drawer-note"></div>
+      </div>
       <div class="drawer-toggle">
         <span>الوضع الداكن</span>
         <button id="qtMode" type="button" aria-label="تبديل الوضع"></button>
@@ -478,8 +478,8 @@
     const idInput        = document.getElementById('idInput');
     const pasteSearchBtn = document.getElementById('pasteSearchBtn');
     const pasteHint      = document.getElementById('pasteHint');
-    const nearbyBox      = document.getElementById('nearbyBox');
-    const nearbyList     = document.getElementById('nearbyList');
+    const headerSectionLabelEl = document.getElementById('headerSectionLabel');
+    const sectionChipEl        = document.getElementById('sectionChip');
 
     const resultsBox  = document.getElementById('resultsBox');
     const statusBadge = document.getElementById('statusBadge');
@@ -569,6 +569,11 @@ const advCard  = document.getElementById('advCard');
     const menuReloadBtn   = document.getElementById('menuReload');
     const menuHomeBtn     = document.getElementById('menuHome');
     const menuBulkBtn     = document.getElementById('menuBulk');
+    const menuSectionSelect = document.getElementById('menuSection');
+    const menuSectionStatus = document.getElementById('menuSectionStatus');
+    if (menuSectionStatus) {
+      menuSectionStatus.textContent = '✳️ اكتب اسم كل قسم في العمود K (بدءًا من K2) داخل ورقة Settings. يمكن أن يكون العنوان في K1 مثل Sheet_month_name أو أي وصف تفضله.';
+    }
     const viewTabs        = Array.from(document.querySelectorAll('.view-tab'));
     const mainViewEl      = document.getElementById('mainView');
     const bulkViewEl      = document.getElementById('bulkView');
@@ -604,6 +609,21 @@ const advCard  = document.getElementById('advCard');
     if (menuToggleBtn) menuToggleBtn.addEventListener('click', toggleDrawer);
     if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
     if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+    if (menuSectionSelect) {
+      menuSectionSelect.addEventListener('change', () => {
+        const selected = menuSectionSelect.value;
+        if (!selected) return;
+        if (selected === activeSectionKey) {
+          if (activeSectionLabel) {
+            setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
+          }
+          return;
+        }
+        performSectionSwitch(selected);
+      });
+    }
+    updateHeaderSectionUI('');
+    fetchSections();
 
     const viewsMap = { main: mainViewEl, bulk: bulkViewEl };
 
@@ -641,7 +661,6 @@ const advCard  = document.getElementById('advCard');
 
     // حالة
     let localMap = null;
-    let sortedLocalIds = [];
     let lastResult = null;
     let lastProfileIds = [];
     let lastBaseId = '';
@@ -657,6 +676,12 @@ const advCard  = document.getElementById('advCard');
     let bulkExternalErrorMessage = '';
     let bulkPage = 1;
     let bulkMobileEnabled = false;
+
+    let sectionOptions = [];
+    let activeSectionKey = '';
+    let activeSectionLabel = '';
+    let manualSearchTimer = null;
+    let skipNextManualDebounce = false;
 
     const BULK_PAGE_SIZE = 20;
     const BULK_MOBILE_STORAGE_KEY = 'bulk_mobile_enabled';
@@ -698,16 +723,144 @@ const advCard  = document.getElementById('advCard');
       }
     }
 
-    const runServer = (fnName, ...args) => new Promise((resolve, reject) => {
-      try {
-        google.script.run
-          .withSuccessHandler(resolve)
-          .withFailureHandler(err => reject(err))
-          [fnName](...args);
-      } catch (err) {
-        reject(err);
+    function setSectionStatus(message){
+      if (menuSectionStatus) {
+        menuSectionStatus.textContent = message || '';
       }
-    });
+    }
+
+    function updateHeaderSectionUI(label){
+      const safe = String(label || '').trim();
+      window.__activeSectionLabel = safe;
+      if (headerSectionLabelEl) {
+        headerSectionLabelEl.textContent = safe || '—';
+      }
+      if (sectionChipEl) {
+        sectionChipEl.classList.toggle('is-empty', !safe);
+        sectionChipEl.title = safe ? `القسم الحالي: ${safe}` : 'لم يتم اختيار قسم';
+      }
+      if (window.__aiClient && typeof window.__aiClient.setActiveSection === 'function') {
+        window.__aiClient.setActiveSection(safe);
+      }
+    }
+
+    function rebuildSectionOptions(){
+      if (!menuSectionSelect) return;
+      const previous = menuSectionSelect.value;
+      menuSectionSelect.innerHTML = '';
+      sectionOptions.forEach(section => {
+        const opt = document.createElement('option');
+        opt.value = section.key || '';
+        opt.textContent = section.label || section.key || '';
+        menuSectionSelect.appendChild(opt);
+      });
+      const targetValue = activeSectionKey || previous;
+      if (targetValue) {
+        menuSectionSelect.value = targetValue;
+      }
+      if (!menuSectionSelect.value && menuSectionSelect.options.length) {
+        menuSectionSelect.selectedIndex = 0;
+      }
+      if (!activeSectionLabel && sectionOptions.length) {
+        const match = sectionOptions.find(s => s.key === menuSectionSelect.value);
+        activeSectionLabel = match ? match.label : '';
+      }
+      menuSectionSelect.disabled = sectionOptions.length <= 1;
+    }
+
+    async function fetchSections(options = {}){
+      if (!menuSectionSelect) return;
+      const keepStatus = options.keepStatus;
+      if (!keepStatus) setSectionStatus('⏳ جارٍ تحميل الأقسام…');
+      menuSectionSelect.disabled = true;
+      try {
+        const res = await runServer('getAvailableSections');
+        if (!res || res.ok === false) {
+          const msg = res?.message || 'فشل تحميل الأقسام.';
+          setSectionStatus('⚠️ ' + msg);
+          sectionOptions = [];
+          activeSectionKey = '';
+          activeSectionLabel = '';
+          menuSectionSelect.innerHTML = '';
+          menuSectionSelect.disabled = true;
+          return;
+        }
+        sectionOptions = Array.isArray(res.sections) ? res.sections : [];
+        activeSectionKey = res.activeKey || (sectionOptions[0]?.key || '');
+        const match = sectionOptions.find(s => s.key === activeSectionKey);
+        activeSectionLabel = res.activeLabel || (match ? match.label : '');
+        rebuildSectionOptions();
+        updateHeaderSectionUI(activeSectionLabel);
+        if (activeSectionLabel) {
+          setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
+        } else {
+          setSectionStatus(sectionOptions.length ? 'اختر قسمًا لبدء العمل.' : 'لم يتم إعداد أي قسم.');
+        }
+      } catch (err) {
+        setSectionStatus('⚠️ حدث خطأ أثناء تحميل الأقسام: ' + (err?.message || err));
+        sectionOptions = [];
+        activeSectionKey = '';
+        activeSectionLabel = '';
+        menuSectionSelect.innerHTML = '';
+        menuSectionSelect.disabled = true;
+        updateHeaderSectionUI('');
+      }
+    }
+
+    async function performSectionSwitch(key){
+      const targetKey = String(key || '').trim();
+      if (!targetKey) return;
+      if (menuSectionSelect) menuSectionSelect.disabled = true;
+      setSectionStatus('⏳ جارٍ تحميل بيانات القسم…');
+      if (loadNote) loadNote.textContent = '⏳ جارٍ تحميل بيانات القسم…';
+      setLoadBtnState(false);
+      try {
+        const res = await runServer('switchActiveSection', targetKey);
+        if (!res || res.ok === false) {
+          const msg = res?.message || 'فشل تبديل القسم.';
+          setSectionStatus('⚠️ ' + msg);
+          if (loadNote) loadNote.textContent = '⚠️ ' + msg;
+          return;
+        }
+        activeSectionKey = res.section?.key || targetKey;
+        activeSectionLabel = res.section?.label || (sectionOptions.find(s => s.key === activeSectionKey)?.label || '');
+        rebuildSectionOptions();
+        updateHeaderSectionUI(activeSectionLabel);
+        const baseMsg = res.loadResult?.message || 'تم تحديث بيانات القسم.';
+        const serverOk = res.loadResult?.success !== false;
+        applyLoadResults(baseMsg, res.snapshot, { serverSuccess: serverOk });
+        if (activeSectionLabel) {
+          setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
+        } else {
+          setSectionStatus('✅ تم تحديث القسم.');
+        }
+        if (typeof fillSheets === 'function') {
+          fillSheets();
+        } else {
+          refreshBulkSheets();
+        }
+      } catch (err) {
+        setSectionStatus('⚠️ حدث خطأ أثناء تحديث القسم: ' + (err?.message || err));
+      } finally {
+        if (menuSectionSelect) {
+          menuSectionSelect.disabled = sectionOptions.length <= 1;
+          menuSectionSelect.value = activeSectionKey || '';
+        }
+      }
+    }
+
+    function runServer(fnName, ...args) {
+      return new Promise((resolve, reject) => {
+        try {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(err => reject(err))
+            [fnName](...args);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
 
     const parseBulkIds = txt => {
       return String(txt || '')
@@ -717,97 +870,6 @@ const advCard  = document.getElementById('advCard');
     };
 
     const isMobileLayout = () => window.matchMedia('(max-width: 1200px)').matches;
-
-    function rebuildSortedLocalIds(){
-      if (!localMap || typeof localMap !== 'object'){ sortedLocalIds = []; return; }
-      const keys = Object.keys(localMap)
-        .filter(id => /^\d+$/.test(id));
-      keys.sort((a,b) => Number(a) - Number(b));
-      sortedLocalIds = keys;
-    }
-
-    function clearNearbySuggestions(){
-      if (!nearbyBox || !nearbyList) return;
-      nearbyList.innerHTML = '';
-      nearbyBox.classList.remove('show');
-      nearbyBox.style.display = 'none';
-    }
-
-    function getNearbySuggestions(id, limit = 5){
-      if (!sortedLocalIds.length) return [];
-      const target = Number(id);
-      if (!Number.isFinite(target)) return [];
-
-      let lo = 0;
-      let hi = sortedLocalIds.length;
-      while (lo < hi){
-        const mid = (lo + hi) >> 1;
-        const value = Number(sortedLocalIds[mid]);
-        if (value < target) lo = mid + 1;
-        else hi = mid;
-      }
-
-      let left = lo - 1;
-      let right = lo;
-      const picks = [];
-      const seen = new Set();
-
-      while (picks.length < limit && (left >= 0 || right < sortedLocalIds.length)){
-        const leftDiff = left >= 0 ? Math.abs(Number(sortedLocalIds[left]) - target) : Infinity;
-        const rightDiff = right < sortedLocalIds.length ? Math.abs(Number(sortedLocalIds[right]) - target) : Infinity;
-
-        if (leftDiff <= rightDiff){
-          const candidate = sortedLocalIds[left--];
-          if (candidate !== id && !seen.has(candidate)){
-            seen.add(candidate);
-            picks.push({ id: candidate, diff: leftDiff });
-          }
-        } else {
-          const candidate = sortedLocalIds[right++];
-          if (candidate !== id && !seen.has(candidate)){
-            seen.add(candidate);
-            picks.push({ id: candidate, diff: rightDiff });
-          }
-        }
-      }
-
-      return picks.map(entry => {
-        const base = buildLocalResult(entry.id);
-        return Object.assign({ diff: entry.diff }, base);
-      }).filter(item => item && item.status && item.status !== 'غير موجود');
-    }
-
-    function renderNearbySuggestions(id){
-      if (!nearbyBox || !nearbyList) return;
-      const cleanId = String(id || '').trim();
-      if (!cleanId){ clearNearbySuggestions(); return; }
-
-      const suggestions = getNearbySuggestions(cleanId, 5);
-      if (!suggestions.length){ clearNearbySuggestions(); return; }
-
-      nearbyList.innerHTML = '';
-      suggestions.forEach((suggestion, index) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'nearby-item' + (index === 0 ? ' nearby-item--primary' : '');
-        const diffLabel = Number.isFinite(suggestion.diff) && suggestion.diff > 0
-          ? `±${suggestion.diff}`
-          : '';
-        btn.innerHTML = `
-          <span class="nearby-status">${suggestion.status || ''}</span>
-          <span class="nearby-id">${suggestion.id || ''}</span>
-          <span class="nearby-diff">${diffLabel}</span>
-        `;
-        btn.addEventListener('click', () => {
-          idInput.value = suggestion.id || '';
-          doSearch();
-        });
-        nearbyList.appendChild(btn);
-      });
-
-      nearbyBox.style.display = 'block';
-      nearbyBox.classList.add('show');
-    }
 
     function markJustColored(ids, mode){
       const arr = Array.isArray(ids) ? ids : [ids];
@@ -1354,7 +1416,9 @@ const advCard  = document.getElementById('advCard');
         const salaryVal = Number(baseSalaryRaw || 0);
         const salaryStr = salaryVal.toFixed(2);
         if (mode === 'salary') return salaryStr;
-        return [res.id || '', salaryStr, res.state || ''].join('\t');
+        const stateText = res.state || '';
+        const duplicateText = res.duplicateLabel ? `${stateText ? ' - ' : ''}${res.duplicateLabel}` : '';
+        return [res.id || '', salaryStr, `${stateText}${duplicateText}`.trim()].join('\t');
       });
       const text = rows.join('\n');
       const successMessage = copyingDuringRun
@@ -1470,7 +1534,9 @@ const advCard  = document.getElementById('advCard');
       const v = lastIdText.textContent || '';
       if (!v) return;
       idInput.value = v;
-      doSearch();
+      clearTimeout(manualSearchTimer);
+      manualSearchTimer = null;
+      doSearch({ manual:true });
     });
 
     /******** تحميل الأوراق ********/
@@ -1498,6 +1564,25 @@ const advCard  = document.getElementById('advCard');
       if (ok===true){ reloadBtn.classList.remove('btn-red'); reloadBtn.classList.add('btn-green'); }
       else if (ok===false){ reloadBtn.classList.remove('btn-green'); reloadBtn.classList.add('btn-red'); }
     }
+
+    function applyLoadResults(baseMessage, snapshot, options = {}){
+      if (!loadNote) return;
+      const baseMsg = baseMessage || 'تم التحميل من السيرفر.';
+      const serverOk = options.serverSuccess !== false;
+      if (!snapshot || snapshot.ok === false) {
+        const extra = snapshot && snapshot.message ? snapshot.message : '';
+        loadNote.textContent = extra
+          ? `${baseMsg} | ⚠️ فشل المحلي: ${extra}`
+          : `${baseMsg} | ⚠️ فشل التحميل المحلي.`;
+        setLoadBtnState(false);
+        return;
+      }
+      localMap = snapshot.map || null;
+      const st = snapshot.stats || {};
+      loadNote.textContent = `${baseMsg} | محلي: ${st.agentRows||0} صف / ${st.agentUnique||0} ID.`;
+      setLoadBtnState(serverOk);
+      refreshCountsLive();
+    }
     function loadData(){
       setLoadBtnState(false);
       loadNote.textContent = '⏳ جارٍ تحميل البيانات…';
@@ -1506,17 +1591,8 @@ const advCard  = document.getElementById('advCard');
           const baseMsg = srv?.message || 'تم التحميل من السيرفر.';
           google.script.run
             .withSuccessHandler(res=>{
-              if(!res || !res.ok){
-                loadNote.textContent = baseMsg + ' | ⚠️ فشل المحلي: ' + (res?.message||'');
-                setLoadBtnState(false);
-                return;
-              }
-              localMap = res.map || null;
-              rebuildSortedLocalIds();
-              const st = res.stats || {};
-              loadNote.textContent = `${baseMsg} | محلي: ${st.agentRows||0} صف / ${st.agentUnique||0} ID.`;
-              setLoadBtnState(true);
-              refreshCountsLive();
+              const serverOk = srv?.success !== false;
+              applyLoadResults(baseMsg, res, { serverSuccess: serverOk });
             })
             .withFailureHandler(err=>{
               loadNote.textContent = baseMsg + ' | ⚠️ خطأ بالمحلي: ' + (err?.message||'');
@@ -1626,19 +1702,53 @@ const advCard  = document.getElementById('advCard');
         const txt = await navigator.clipboard.readText();
         if (txt && txt.trim()){
           idInput.value = txt.trim();
-          doSearch();
+          clearTimeout(manualSearchTimer);
+          manualSearchTimer = null;
+          doSearch({ manual:true });
           return;
         }
       }catch(_){}
       idInput.focus(); idInput.select();
       pasteHint.textContent = 'الصق يدويًا وسيبدأ البحث تلقائيًا…';
-      const once = ()=>{ pasteHint.textContent = ''; idInput.removeEventListener('input', once); setTimeout(doSearch, 0); };
+      const once = ()=>{
+        pasteHint.textContent = '';
+        idInput.removeEventListener('input', once);
+        skipNextManualDebounce = true;
+        setTimeout(()=>{
+          doSearch({ manual:true });
+          skipNextManualDebounce = false;
+        }, 0);
+      };
       idInput.addEventListener('input', once, { once:true });
     });
-    idInput.addEventListener('paste', ()=> setTimeout(doSearch, 0));
-    idInput.addEventListener('keyup', e=>{ if (e.key === 'Enter') doSearch(); });
+    idInput.addEventListener('paste', ()=>{
+      skipNextManualDebounce = true;
+      setTimeout(()=>{
+        clearTimeout(manualSearchTimer);
+        manualSearchTimer = null;
+        doSearch({ manual:true });
+        skipNextManualDebounce = false;
+      }, 0);
+    });
+    idInput.addEventListener('keyup', e=>{
+      if (e.key === 'Enter'){
+        clearTimeout(manualSearchTimer);
+        manualSearchTimer = null;
+        doSearch({ manual:true });
+      }
+    });
     idInput.addEventListener('input', ()=>{
-      if (!idInput.value.trim()) clearNearbySuggestions();
+      if (skipNextManualDebounce) return;
+      const val = String(idInput.value || '').trim();
+      clearTimeout(manualSearchTimer);
+      if (!val){
+        manualSearchTimer = null;
+        doSearch({ manual:true });
+        return;
+      }
+      manualSearchTimer = setTimeout(()=>{
+        doSearch({ manual:true });
+      }, 140);
     });
 
     /******** رندر النتائج ********/
@@ -1992,7 +2102,7 @@ const advCard  = document.getElementById('advCard');
       };
     }
 
-  function doSearch(){
+  function doSearch(options = {}){
     const id = String(idInput.value||'').trim();
     if (!id){
       applyBadges('غير موجود', null, false);
@@ -2005,14 +2115,12 @@ const advCard  = document.getElementById('advCard');
       personNote.textContent = '—';
       personMsg.value = '';
       clearDupUI();
-      clearNearbySuggestions();
       return;
     }
 
     saveLastId(id);
     lastBaseId = id;
     renderLoading(); // أبقِ "جارٍ البحث…" كافتراضي
-    clearNearbySuggestions();
 
     const hasLocal = !!(localMap && Object.prototype.hasOwnProperty.call(localMap, id));
     if (hasLocal){
@@ -2044,11 +2152,6 @@ const advCard  = document.getElementById('advCard');
         isDuplicate,
         duplicateLabel
       });
-      clearNearbySuggestions();
-    }
-    // إذا غير موجود محليًا (قد يكون "إدارة فقط"): لا نعرض "غير موجود" — ننتظر رد السيرفر.
-    else {
-      renderNearbySuggestions(id);
     }
 
     const mySeq = (++window.__qseq || (window.__qseq=1));
@@ -2059,17 +2162,13 @@ const advCard  = document.getElementById('advCard');
         if (mySeq !== window.__qseq) return; // تجاهل الردود المتأخرة
         if (!res || res.status === 'error'){
           if (res && res.message) renderResult({ status:'error', message: res.message });
-          renderNearbySuggestions(id);
           return;
         }
         renderResult(res);
-        if (res.status === 'غير موجود') renderNearbySuggestions(id);
-        else clearNearbySuggestions();
         renderPersonCard(id);
       })
       .withFailureHandler(err=>{
         if (err && err.message) renderResult({ status:'error', message: err.message });
-        renderNearbySuggestions(id);
       })
       .searchId(id, pct);
   }
@@ -2514,7 +2613,6 @@ const advCard  = document.getElementById('advCard');
 })();
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('AIClient').getContent(); ?>
-</script>
 <!-- ✅ ترتيب موحّد + تثبيت الأدوات السريعة + تنسيق صف البحث -->
  
 <script>
