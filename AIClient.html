@@ -1,0 +1,272 @@
+<script>
+(function(){
+  const mount = document.getElementById('aiMountHere');
+  if (!mount) return;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .ai-suggest-card{margin-top:18px;background:var(--surface);border-radius:22px;padding:18px;border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 54px rgba(8,14,26,.38);}
+    .ai-suggest-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .ai-suggest-headings{display:flex;flex-direction:column;gap:4px;}
+    .ai-suggest-title{font-size:16px;font-weight:800;color:var(--accent);}
+    .ai-suggest-sub{font-size:12px;color:var(--muted);max-width:320px;}
+    .ai-suggest-chip{padding:6px 12px;border-radius:999px;border:1px solid rgba(43,255,168,.26);background:rgba(43,255,168,.08);color:var(--accent);font-size:12px;font-weight:700;white-space:nowrap;transition:background .18s ease,border .18s ease,color .18s ease;}
+    .ai-suggest-chip.is-empty{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);color:var(--muted);}
+    .ai-suggest-search{display:flex;align-items:center;gap:8px;}
+    .ai-suggest-search input{flex:1;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:var(--surface-strong);color:var(--text);outline:none;transition:border .18s ease,box-shadow .18s ease;}
+    .ai-suggest-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+    .ai-suggest-search button{flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:var(--surface-strong);border:1px solid rgba(255,255,255,.08);color:var(--muted);cursor:pointer;transition:background .18s ease,color .18s ease,border .18s ease;}
+    .ai-suggest-search button:hover{color:var(--accent);border-color:rgba(43,255,168,.28);}
+    .ai-suggest-search button:disabled{opacity:.4;cursor:not-allowed;color:var(--muted);}
+    .ai-suggest-status{font-size:12px;color:var(--muted);min-height:16px;}
+    .ai-suggest-results{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow:auto;padding-inline-end:6px;}
+    .ai-suggest-results::-webkit-scrollbar{width:6px;}
+    .ai-suggest-results::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:999px;}
+    .ai-suggest-empty{padding:18px;border-radius:16px;text-align:center;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);}
+    .ai-suggest-item{border:none;background:var(--surface-strong);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;align-items:stretch;text-align:right;cursor:pointer;border:1px solid rgba(255,255,255,.06);box-shadow:0 16px 40px rgba(8,14,26,.34);transition:transform .18s ease,box-shadow .18s ease,border .18s ease;}
+    .ai-suggest-item:hover{transform:translateY(-2px);border-color:rgba(43,255,168,.28);box-shadow:0 20px 48px rgba(12,22,36,.42);}
+    .ai-suggest-top{display:flex;align-items:center;gap:10px;justify-content:space-between;}
+    .ai-suggest-id{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text-strong);}
+    .ai-suggest-id mark{background:rgba(43,255,168,.26);color:var(--text-strong);border-radius:4px;padding:0 2px;}
+    .ai-suggest-status{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent;}
+    .ai-suggest-status--agent{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.32);color:#8cdcff;}
+    .ai-suggest-status--withdraw{background:rgba(77,228,161,.16);border-color:rgba(77,228,161,.32);color:#4de4a1;}
+    .ai-suggest-status--admin{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.36);color:#facc15;}
+    .ai-suggest-status--missing{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:var(--muted);}
+    .ai-suggest-status--other{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:var(--muted);}
+    .ai-suggest-body{display:flex;flex-direction:column;gap:6px;}
+    .ai-suggest-name{font-size:13px;color:var(--text);word-break:break-word;}
+    .ai-suggest-name mark{background:rgba(43,255,168,.26);color:var(--text-strong);border-radius:4px;padding:0 2px;}
+    .ai-suggest-foot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;color:var(--muted);}
+    .ai-suggest-sum{color:var(--text-strong);font-weight:600;}
+    .ai-suggest-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:600;color:var(--muted);}
+    .ai-suggest-chip--dup{background:rgba(255,93,117,.16);border-color:rgba(255,93,117,.28);color:#ff8da4;}
+    .ai-suggest-chip--colored{background:rgba(43,255,168,.16);border-color:rgba(43,255,168,.32);color:#2bffa8;}
+    .ai-suggest-chip--plain{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--muted);}
+    .ai-suggest-chip--hint{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.28);color:#8cdcff;}
+    .ai-suggest-hint{font-size:11px;color:var(--muted);}
+    .ai-suggest-hint mark{background:rgba(43,255,168,.18);color:var(--text-strong);border-radius:4px;padding:0 2px;}
+    @media(min-width:1024px){
+      .ai-suggest-card{margin-top:22px;}
+    }
+  `;
+  document.head.appendChild(style);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ai-suggest-card';
+  wrapper.innerHTML = `
+    <div class="ai-suggest-head">
+      <div class="ai-suggest-headings">
+        <div class="ai-suggest-title">مقترحات الـIDs</div>
+        <div class="ai-suggest-sub">اعثر على سجلات مشابهة بسرعة حسب القسم الحالي.</div>
+      </div>
+      <div class="ai-suggest-chip is-empty" data-ai-section>—</div>
+    </div>
+    <div class="ai-suggest-search">
+      <input type="text" data-ai-query placeholder="اكتب جزءًا من الاسم أو الـID" autocomplete="off" inputmode="search" />
+      <button type="button" data-ai-clear aria-label="مسح">✕</button>
+    </div>
+    <div class="ai-suggest-status" data-ai-status></div>
+    <div class="ai-suggest-results" data-ai-results></div>
+  `;
+  mount.appendChild(wrapper);
+
+  const queryInput = wrapper.querySelector('[data-ai-query]');
+  const clearBtn = wrapper.querySelector('[data-ai-clear]');
+  const resultsEl = wrapper.querySelector('[data-ai-results]');
+  const statusEl = wrapper.querySelector('[data-ai-status]');
+  const sectionChip = wrapper.querySelector('[data-ai-section]');
+
+  let debounceHandle = null;
+  let lastQuery = '';
+  let lastRequestId = 0;
+
+  const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
+  const escapeHtml = (txt) => String(txt || '').replace(/[&<>"']/g, ch => {
+    switch (ch) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#39;';
+      default: return ch;
+    }
+  });
+  function escapeRegExp(txt){
+    return String(txt || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function highlight(text, query){
+    const safe = escapeHtml(text);
+    if (!query) return safe;
+    try {
+      const regex = new RegExp(escapeRegExp(query), 'ig');
+      return safe.replace(regex, match => `<mark>${match}</mark>`);
+    } catch (_) {
+      return safe;
+    }
+  }
+
+  function renderEmpty(message){
+    resultsEl.innerHTML = `<div class="ai-suggest-empty">${escapeHtml(message)}</div>`;
+  }
+
+  function setStatus(message){
+    statusEl.textContent = message || '';
+  }
+
+  function statusClassFromText(text){
+    const t = String(text || '').trim();
+    if (!t) return 'other';
+    if (t.includes('سحب وكالة')) return 'withdraw';
+    if (t.includes('وكال')) return 'agent';
+    if (t.includes('ادارة')) return 'admin';
+    if (t.includes('غير موجود')) return 'missing';
+    return 'other';
+  }
+
+  function syncClearButton(){
+    if (!clearBtn) return;
+    const has = !!String(queryInput.value || '').trim();
+    clearBtn.disabled = !has;
+  }
+
+  function renderItems(items){
+    if (!items.length){
+      renderEmpty('لا توجد مقترحات مطابقة.');
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ai-suggest-item';
+      const statusClass = statusClassFromText(item.status || '');
+      const idHtml = item.matchKind === 'id' ? highlight(item.id || '', lastQuery) : escapeHtml(item.id || '');
+      const nameQuery = item.matchKind === 'name' ? lastQuery : '';
+      const displayName = item.primaryName ? highlight(item.primaryName, nameQuery) : '—';
+      const matchLabel = item.matchKind === 'name' && item.matchValue && item.matchValue !== item.primaryName
+        ? `<div class="ai-suggest-hint">${highlight(item.matchValue, lastQuery)}</div>`
+        : '';
+      const totalLabel = numberFormatter.format(Number(item.totalSalary || 0));
+      const chips = [];
+      chips.push(`<span class="ai-suggest-chip ${item.colored ? 'ai-suggest-chip--colored' : 'ai-suggest-chip--plain'}">${item.colored ? 'ملوّن' : 'غير ملوّن'}</span>`);
+      if (item.rowsCount > 1) chips.push('<span class="ai-suggest-chip">راتبين</span>');
+      if (item.duplicateLabel) chips.push(`<span class="ai-suggest-chip ai-suggest-chip--dup">${escapeHtml(item.duplicateLabel)}</span>`);
+      chips.push('<span class="ai-suggest-chip ai-suggest-chip--hint">' + (item.matchKind === 'name' ? 'مطابقة بالاسم' : 'مطابقة بالرقم') + '</span>');
+
+      btn.innerHTML = `
+        <div class="ai-suggest-top">
+          <span class="ai-suggest-id">${idHtml}</span>
+          <span class="ai-suggest-status ai-suggest-status--${statusClass}">${escapeHtml(item.status || '—')}</span>
+        </div>
+        <div class="ai-suggest-body">
+          <div class="ai-suggest-name">${displayName}</div>
+          <div class="ai-suggest-foot">
+            <span class="ai-suggest-sum">المجموع: ${totalLabel}</span>
+            ${chips.join('')}
+          </div>
+          ${matchLabel}
+        </div>
+      `;
+      btn.addEventListener('click', () => {
+        const input = document.getElementById('idInput');
+        if (input) {
+          input.value = item.id || '';
+          input.focus();
+        }
+        if (typeof doSearch === 'function') {
+          setTimeout(() => doSearch({ allowSuggestions: true }), 0);
+        }
+      });
+      frag.appendChild(btn);
+    });
+    resultsEl.innerHTML = '';
+    resultsEl.appendChild(frag);
+  }
+
+  function fetchSuggestions(query){
+    const trimmed = String(query || '').trim();
+    lastQuery = trimmed;
+    syncClearButton();
+    if (!trimmed){
+      setStatus('');
+      renderEmpty('ابدأ بالكتابة لعرض المقترحات.');
+      return;
+    }
+    if (trimmed.length < 2){
+      setStatus('');
+      renderEmpty('اكتب حرفين على الأقل للحصول على نتائج.');
+      return;
+    }
+    const requestId = ++lastRequestId;
+    setStatus('⏳ جارٍ التحليل…');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (requestId !== lastRequestId) return;
+        const items = Array.isArray(res && res.items) ? res.items : [];
+        if (!res || res.ok === false){
+          setStatus('');
+          renderEmpty('⚠️ ' + escapeHtml(res && res.message ? res.message : 'تعذر جلب المقترحات.'));
+          return;
+        }
+        renderItems(items);
+        if (res.meta && typeof res.meta.total === 'number' && res.meta.total > items.length) {
+          setStatus(`عرض أول ${items.length} من ${res.meta.total} نتيجة.`);
+        } else {
+          setStatus(items.length ? `تم العثور على ${items.length} مقترح.` : '');
+        }
+      })
+      .withFailureHandler(err => {
+        if (requestId !== lastRequestId) return;
+        setStatus('');
+        renderEmpty('⚠️ ' + escapeHtml(err && err.message ? err.message : err));
+      })
+      .aiSuggestIds(trimmed, 18);
+  }
+
+  function scheduleFetch(){
+    clearTimeout(debounceHandle);
+    debounceHandle = setTimeout(() => fetchSuggestions(queryInput.value), 220);
+  }
+
+  queryInput.addEventListener('input', scheduleFetch);
+  queryInput.addEventListener('keydown', evt => {
+    if (evt.key === 'Enter') {
+      evt.preventDefault();
+      clearTimeout(debounceHandle);
+      fetchSuggestions(queryInput.value);
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    queryInput.value = '';
+    syncClearButton();
+    queryInput.focus();
+    lastQuery = '';
+    renderEmpty('ابدأ بالكتابة لعرض المقترحات.');
+    setStatus('');
+  });
+
+  renderEmpty('ابدأ بالكتابة لعرض المقترحات.');
+  syncClearButton();
+
+  function applySectionLabel(label){
+    const safe = String(label || '').trim();
+    if (sectionChip) {
+      sectionChip.textContent = safe || '—';
+      sectionChip.classList.toggle('is-empty', !safe);
+    }
+    if (safe && queryInput.value && queryInput.value.trim()) {
+      clearTimeout(debounceHandle);
+      debounceHandle = setTimeout(() => fetchSuggestions(queryInput.value), 80);
+    }
+  }
+
+  window.__aiClient = window.__aiClient || {};
+  window.__aiClient.setActiveSection = applySectionLabel;
+
+  applySectionLabel(window.__activeSectionLabel || '');
+})();
+</script>
