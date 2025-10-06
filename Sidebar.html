@@ -449,6 +449,11 @@
       <button id="menuReload" class="drawer-item primary" type="button">تحميل البيانات</button>
       <button id="menuHome" class="drawer-item" type="button">الصفحة الرئيسية</button>
       <button id="menuBulk" class="drawer-item" type="button">أداة البحث الجماعي</button>
+      <div class="drawer-section">
+        <label class="small" for="menuSection">القسم الحالي</label>
+        <select id="menuSection"></select>
+        <div id="menuSectionStatus" class="drawer-note"></div>
+      </div>
       <div class="drawer-toggle">
         <span>الوضع الداكن</span>
         <button id="qtMode" type="button" aria-label="تبديل الوضع"></button>
@@ -569,6 +574,11 @@ const advCard  = document.getElementById('advCard');
     const menuReloadBtn   = document.getElementById('menuReload');
     const menuHomeBtn     = document.getElementById('menuHome');
     const menuBulkBtn     = document.getElementById('menuBulk');
+    const menuSectionSelect = document.getElementById('menuSection');
+    const menuSectionStatus = document.getElementById('menuSectionStatus');
+    if (menuSectionStatus) {
+      menuSectionStatus.textContent = '✳️ اكتب اسم كل قسم في العمود K (بدءًا من K2) داخل ورقة Settings. يمكن أن يكون العنوان في K1 مثل Sheet_month_name أو أي وصف تفضله.';
+    }
     const viewTabs        = Array.from(document.querySelectorAll('.view-tab'));
     const mainViewEl      = document.getElementById('mainView');
     const bulkViewEl      = document.getElementById('bulkView');
@@ -604,6 +614,20 @@ const advCard  = document.getElementById('advCard');
     if (menuToggleBtn) menuToggleBtn.addEventListener('click', toggleDrawer);
     if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
     if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+    if (menuSectionSelect) {
+      menuSectionSelect.addEventListener('change', () => {
+        const selected = menuSectionSelect.value;
+        if (!selected) return;
+        if (selected === activeSectionKey) {
+          if (activeSectionLabel) {
+            setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
+          }
+          return;
+        }
+        performSectionSwitch(selected);
+      });
+    }
+    fetchSections();
 
     const viewsMap = { main: mainViewEl, bulk: bulkViewEl };
 
@@ -658,6 +682,10 @@ const advCard  = document.getElementById('advCard');
     let bulkPage = 1;
     let bulkMobileEnabled = false;
 
+    let sectionOptions = [];
+    let activeSectionKey = '';
+    let activeSectionLabel = '';
+
     const BULK_PAGE_SIZE = 20;
     const BULK_MOBILE_STORAGE_KEY = 'bulk_mobile_enabled';
     const JUST_COLORED_TTL = 120000;
@@ -695,6 +723,114 @@ const advCard  = document.getElementById('advCard');
       }
       if (menuDiscountInput && !options.skipInputUpdate) {
         menuDiscountInput.value = formatted;
+      }
+    }
+
+    function setSectionStatus(message){
+      if (menuSectionStatus) {
+        menuSectionStatus.textContent = message || '';
+      }
+    }
+
+    function rebuildSectionOptions(){
+      if (!menuSectionSelect) return;
+      const previous = menuSectionSelect.value;
+      menuSectionSelect.innerHTML = '';
+      sectionOptions.forEach(section => {
+        const opt = document.createElement('option');
+        opt.value = section.key || '';
+        opt.textContent = section.label || section.key || '';
+        menuSectionSelect.appendChild(opt);
+      });
+      const targetValue = activeSectionKey || previous;
+      if (targetValue) {
+        menuSectionSelect.value = targetValue;
+      }
+      if (!menuSectionSelect.value && menuSectionSelect.options.length) {
+        menuSectionSelect.selectedIndex = 0;
+      }
+      if (!activeSectionLabel && sectionOptions.length) {
+        const match = sectionOptions.find(s => s.key === menuSectionSelect.value);
+        activeSectionLabel = match ? match.label : '';
+      }
+      menuSectionSelect.disabled = sectionOptions.length <= 1;
+    }
+
+    async function fetchSections(options = {}){
+      if (!menuSectionSelect) return;
+      const keepStatus = options.keepStatus;
+      if (!keepStatus) setSectionStatus('⏳ جارٍ تحميل الأقسام…');
+      menuSectionSelect.disabled = true;
+      try {
+        const res = await runServer('getAvailableSections');
+        if (!res || res.ok === false) {
+          const msg = res?.message || 'فشل تحميل الأقسام.';
+          setSectionStatus('⚠️ ' + msg);
+          sectionOptions = [];
+          activeSectionKey = '';
+          activeSectionLabel = '';
+          menuSectionSelect.innerHTML = '';
+          menuSectionSelect.disabled = true;
+          return;
+        }
+        sectionOptions = Array.isArray(res.sections) ? res.sections : [];
+        activeSectionKey = res.activeKey || (sectionOptions[0]?.key || '');
+        const match = sectionOptions.find(s => s.key === activeSectionKey);
+        activeSectionLabel = res.activeLabel || (match ? match.label : '');
+        rebuildSectionOptions();
+        if (activeSectionLabel) {
+          setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
+        } else {
+          setSectionStatus(sectionOptions.length ? 'اختر قسمًا لبدء العمل.' : 'لم يتم إعداد أي قسم.');
+        }
+      } catch (err) {
+        setSectionStatus('⚠️ حدث خطأ أثناء تحميل الأقسام: ' + (err?.message || err));
+        sectionOptions = [];
+        activeSectionKey = '';
+        activeSectionLabel = '';
+        menuSectionSelect.innerHTML = '';
+        menuSectionSelect.disabled = true;
+      }
+    }
+
+    async function performSectionSwitch(key){
+      const targetKey = String(key || '').trim();
+      if (!targetKey) return;
+      if (menuSectionSelect) menuSectionSelect.disabled = true;
+      setSectionStatus('⏳ جارٍ تحميل بيانات القسم…');
+      if (loadNote) loadNote.textContent = '⏳ جارٍ تحميل بيانات القسم…';
+      setLoadBtnState(false);
+      try {
+        const res = await runServer('switchActiveSection', targetKey);
+        if (!res || res.ok === false) {
+          const msg = res?.message || 'فشل تبديل القسم.';
+          setSectionStatus('⚠️ ' + msg);
+          if (loadNote) loadNote.textContent = '⚠️ ' + msg;
+          return;
+        }
+        activeSectionKey = res.section?.key || targetKey;
+        activeSectionLabel = res.section?.label || (sectionOptions.find(s => s.key === activeSectionKey)?.label || '');
+        rebuildSectionOptions();
+        const baseMsg = res.loadResult?.message || 'تم تحديث بيانات القسم.';
+        const serverOk = res.loadResult?.success !== false;
+        applyLoadResults(baseMsg, res.snapshot, { serverSuccess: serverOk });
+        if (activeSectionLabel) {
+          setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
+        } else {
+          setSectionStatus('✅ تم تحديث القسم.');
+        }
+        if (typeof fillSheets === 'function') {
+          fillSheets();
+        } else {
+          refreshBulkSheets();
+        }
+      } catch (err) {
+        setSectionStatus('⚠️ حدث خطأ أثناء تحديث القسم: ' + (err?.message || err));
+      } finally {
+        if (menuSectionSelect) {
+          menuSectionSelect.disabled = sectionOptions.length <= 1;
+          menuSectionSelect.value = activeSectionKey || '';
+        }
       }
     }
 
@@ -1354,7 +1490,9 @@ const advCard  = document.getElementById('advCard');
         const salaryVal = Number(baseSalaryRaw || 0);
         const salaryStr = salaryVal.toFixed(2);
         if (mode === 'salary') return salaryStr;
-        return [res.id || '', salaryStr, res.state || ''].join('\t');
+        const stateText = res.state || '';
+        const duplicateText = res.duplicateLabel ? `${stateText ? ' - ' : ''}${res.duplicateLabel}` : '';
+        return [res.id || '', salaryStr, `${stateText}${duplicateText}`.trim()].join('\t');
       });
       const text = rows.join('\n');
       const successMessage = copyingDuringRun
@@ -1498,6 +1636,26 @@ const advCard  = document.getElementById('advCard');
       if (ok===true){ reloadBtn.classList.remove('btn-red'); reloadBtn.classList.add('btn-green'); }
       else if (ok===false){ reloadBtn.classList.remove('btn-green'); reloadBtn.classList.add('btn-red'); }
     }
+
+    function applyLoadResults(baseMessage, snapshot, options = {}){
+      if (!loadNote) return;
+      const baseMsg = baseMessage || 'تم التحميل من السيرفر.';
+      const serverOk = options.serverSuccess !== false;
+      if (!snapshot || snapshot.ok === false) {
+        const extra = snapshot && snapshot.message ? snapshot.message : '';
+        loadNote.textContent = extra
+          ? `${baseMsg} | ⚠️ فشل المحلي: ${extra}`
+          : `${baseMsg} | ⚠️ فشل التحميل المحلي.`;
+        setLoadBtnState(false);
+        return;
+      }
+      localMap = snapshot.map || null;
+      rebuildSortedLocalIds();
+      const st = snapshot.stats || {};
+      loadNote.textContent = `${baseMsg} | محلي: ${st.agentRows||0} صف / ${st.agentUnique||0} ID.`;
+      setLoadBtnState(serverOk);
+      refreshCountsLive();
+    }
     function loadData(){
       setLoadBtnState(false);
       loadNote.textContent = '⏳ جارٍ تحميل البيانات…';
@@ -1506,17 +1664,8 @@ const advCard  = document.getElementById('advCard');
           const baseMsg = srv?.message || 'تم التحميل من السيرفر.';
           google.script.run
             .withSuccessHandler(res=>{
-              if(!res || !res.ok){
-                loadNote.textContent = baseMsg + ' | ⚠️ فشل المحلي: ' + (res?.message||'');
-                setLoadBtnState(false);
-                return;
-              }
-              localMap = res.map || null;
-              rebuildSortedLocalIds();
-              const st = res.stats || {};
-              loadNote.textContent = `${baseMsg} | محلي: ${st.agentRows||0} صف / ${st.agentUnique||0} ID.`;
-              setLoadBtnState(true);
-              refreshCountsLive();
+              const serverOk = srv?.success !== false;
+              applyLoadResults(baseMsg, res, { serverSuccess: serverOk });
             })
             .withFailureHandler(err=>{
               loadNote.textContent = baseMsg + ' | ⚠️ خطأ بالمحلي: ' + (err?.message||'');
