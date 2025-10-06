@@ -929,10 +929,11 @@ const advCard  = document.getElementById('advCard');
 
     function updateBulkButtons(){
       const hasIds = bulkIds.length > 0;
+      const hasCopyableResults = bulkResults.length > 0;
       if (bulkPasteBtn) bulkPasteBtn.disabled = bulkBusy;
       if (bulkExecuteBtn) bulkExecuteBtn.disabled = !hasIds || !bulkAnalyzed || bulkBusy;
-      if (bulkCopyAllBtn) bulkCopyAllBtn.disabled = !bulkExecuted;
-      if (bulkCopySalaryBtn) bulkCopySalaryBtn.disabled = !bulkExecuted;
+      if (bulkCopyAllBtn) bulkCopyAllBtn.disabled = !hasCopyableResults;
+      if (bulkCopySalaryBtn) bulkCopySalaryBtn.disabled = !hasCopyableResults;
       if (bulkResetBtn) bulkResetBtn.disabled = bulkBusy || !bulkExecuted;
     }
 
@@ -1341,10 +1342,11 @@ const advCard  = document.getElementById('advCard');
     }
 
     async function copyBulk(mode){
-      if (!bulkExecuted || !bulkResults.length) {
+      if (!bulkResults.length) {
         if (bulkStatusText) bulkStatusText.textContent = '⚠️ نفّذ التحليل والتطبيق أولًا.';
         return;
       }
+      const copyingDuringRun = bulkBusy || !bulkExecuted;
       const discountPct = Math.max(0, Math.min(100, Number(bulkDiscount?.value) || 0));
       const discountApplied = discountPct > 0;
       const rows = bulkResults.map(res => {
@@ -1355,9 +1357,17 @@ const advCard  = document.getElementById('advCard');
         return [res.id || '', salaryStr, res.state || ''].join('\t');
       });
       const text = rows.join('\n');
+      const successMessage = copyingDuringRun
+        ? 'ℹ️ تم النسخ من آخر نتائج مكتملة (لا تزال العملية الحالية جارية).'
+        : '✅ تم النسخ إلى الحافظة.';
+      const fallbackMessage = copyingDuringRun
+        ? 'ℹ️ تم النسخ (وضع احتياطي) من آخر نتائج مكتملة أثناء استمرار العملية الحالية.'
+        : '✅ تم النسخ (وضع احتياطي).';
       try {
         await navigator.clipboard.writeText(text);
-        if (bulkStatusText) bulkStatusText.textContent = '✅ تم النسخ إلى الحافظة.';
+        if (bulkStatusText) {
+          bulkStatusText.textContent = successMessage;
+        }
       } catch (err) {
         const helper = document.createElement('textarea');
         helper.style.position = 'fixed';
@@ -1368,7 +1378,7 @@ const advCard  = document.getElementById('advCard');
         helper.select();
         try {
           document.execCommand('copy');
-          if (bulkStatusText) bulkStatusText.textContent = '✅ تم النسخ (وضع احتياطي).';
+          if (bulkStatusText) bulkStatusText.textContent = fallbackMessage;
         } catch (e2) {
           if (bulkStatusText) bulkStatusText.textContent = `⚠️ انسخ يدويًا: ${e2?.message || e2}`;
         }
