@@ -816,7 +816,11 @@ const advCard  = document.getElementById('advCard');
         } else {
           setSectionStatus('✅ تم تحديث القسم.');
         }
-        refreshBulkSheets();
+        if (typeof fillSheets === 'function') {
+          fillSheets();
+        } else {
+          refreshBulkSheets();
+        }
       } catch (err) {
         setSectionStatus('⚠️ حدث خطأ أثناء تحديث القسم: ' + (err?.message || err));
       } finally {
