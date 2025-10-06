@@ -92,7 +92,11 @@
     #advCard select{background:var(--surface-strong);}
     #advCard .btn-ghost{border-color:rgba(43,255,168,.26);color:var(--accent);min-width:110px;}
     #advCard .btn-green{padding:16px;font-size:18px;border-radius:20px;}
-    #advCard input[type="color"]{width:44px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:var(--surface-strong);padding:0;}
+    #advCard .adv-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+    #advCard .adv-control{display:flex;flex-direction:column;gap:8px;}
+    #advCard .adv-control select{width:100%;min-height:44px;}
+    #advCard .adv-control--color{align-items:center;justify-content:center;}
+    #advCard .adv-control--color input[type="color"]{width:100%;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:var(--surface-strong);padding:0;}
     #advCard .toggle-chip{display:none;}
     #advCard .toggles-row{display:none;}
     #discountInput,#applyDiscountToMessage,#enableSalaryCorrection{display:none;}
@@ -147,36 +151,28 @@
     #statusChipsRow .chip{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);font-size:11px;color:var(--muted);}
     .view-panel footer{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;}
 
+    @media(max-width:768px){
+      #advCard .adv-control{padding:12px;}
+      #advCard .adv-control .title{display:none;}
+      #advCard .adv-control--color input[type="color"]{height:52px;}
+    }
+
     @media(min-width:1024px){
-      body{padding:42px 0;}
-      .app-shell{max-width:1260px;width:min(1260px,calc(100vw - 120px));padding:40px 48px;gap:26px;}
+      body{padding:0;align-items:stretch;}
+      .app-shell{max-width:none;width:100%;padding:40px clamp(32px,5vw,72px);gap:32px;min-height:100vh;}
       .app-header{padding-inline-end:8px;}
       .header-meta{flex-wrap:nowrap;gap:18px;}
       .view-switch{justify-content:flex-start;gap:16px;}
       .view-tab{max-width:240px;}
-      .view-panel{gap:22px;}
-      #mainView.view-panel.active{display:grid;grid-template-columns:minmax(320px,360px) minmax(0,1fr);grid-template-areas:
-        'results adv'
-        'search adv'
-        'load adv'
-        'bulkToggle adv'
-        'bulkMount adv'
-        'person adv';
-        align-items:start;gap:22px 28px;
-      }
-      #resultsBox{grid-area:results;}
-      #searchCard{grid-area:search;}
-      #loadCard{grid-area:load;}
-      #bulkToggleCard{grid-area:bulkToggle;}
-      #bulkMobileMount{grid-area:bulkMount;}
-      #personCard{grid-area:person;}
-      #advCard{grid-area:adv;align-self:start;min-height:100%;}
-      #advCard .pill-group{flex-wrap:wrap;}
-      #advCard .pill{flex:1 1 200px;}
+      .view-panel{gap:24px;}
+      #mainView.view-panel.active{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));grid-auto-rows:minmax(220px,auto);gap:28px;align-content:start;}
+      #mainView.view-panel.active > *{height:100%;}
+      #advCard{align-self:stretch;}
+      #advCard .adv-control-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));}
       #advCard .row.stretch>*,#advCard .row.stretch>button{flex:1;}
       #loadCard button{width:100%;}
-      #bulkView.view-panel.active{display:flex;}
-      #bulkCard{padding:28px 32px;}
+      #bulkView.view-panel.active{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:28px;align-content:start;}
+      #bulkCard{padding:28px 32px;grid-column:1 / -1;}
       .bulk-input-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px;align-items:start;}
       .bulk-input-grid textarea{min-height:320px;}
       .bulk-actions-column{display:flex;flex-direction:column;gap:12px;}
@@ -241,27 +237,23 @@
         <button id="advRunBtn" class="btn-green" type="button">تنفيذ (حسب النتيجة)</button>
         <div id="advNote" class="muted"></div>
 
-        <div class="pill-group">
-          <div class="pill">
+        <div class="adv-control-grid">
+          <div class="pill adv-control">
             <span class="title">الهدف</span>
             <select id="sheetSelect"></select>
           </div>
-          <div class="pill">
+          <div class="pill adv-control">
             <span class="title">التنفيذ</span>
             <select id="targetMode">
               <option value="agent">الوكيل فقط</option>
               <option value="both" selected>الإدارة + الوكيل</option>
             </select>
           </div>
-          <button id="refreshSheetsBtn" class="btn-ghost" type="button" title="تحديث قائمة الأوراق">↻</button>
-        </div>
-
-        <div class="pill-group">
-          <div class="pill">
+          <div class="pill adv-control adv-control--color">
             <span class="title">لون الإدارة</span>
             <input id="adminColor" type="color" value="#fde68a">
           </div>
-          <div class="pill">
+          <div class="pill adv-control adv-control--color">
             <span class="title">لون سحب وكالة</span>
             <input id="withdrawColor" type="color" value="#ddd6fe">
           </div>
@@ -444,6 +436,7 @@
       <button id="menuReload" class="drawer-item primary" type="button">تحميل البيانات</button>
       <button id="menuHome" class="drawer-item" type="button">الصفحة الرئيسية</button>
       <button id="menuBulk" class="drawer-item" type="button">أداة البحث الجماعي</button>
+      <button id="refreshSheetsBtn" class="drawer-item" type="button">تحديث قائمة الأوراق</button>
       <div class="drawer-section">
         <label class="small" for="menuSection">القسم الحالي</label>
         <select id="menuSection"></select>
@@ -654,6 +647,10 @@ const advCard  = document.getElementById('advCard');
     if (menuReloadBtn) menuReloadBtn.addEventListener('click', () => {
       closeDrawer();
       if (reloadBtn) reloadBtn.click();
+    });
+    if (refreshSheetsBtn) refreshSheetsBtn.addEventListener('click', () => {
+      closeDrawer();
+      fillSheets();
     });
     document.addEventListener('keydown', evt => {
       if (evt.key === 'Escape') closeDrawer();
@@ -1541,6 +1538,7 @@ const advCard  = document.getElementById('advCard');
 
     /******** تحميل الأوراق ********/
     function fillSheets(){
+      if (advNote) advNote.textContent = '⏳ جارٍ تحديث قائمة الأوراق…';
       google.script.run
         .withSuccessHandler(arr=>{
           const list = Array.isArray(arr) ? arr : [];
@@ -1554,6 +1552,7 @@ const advCard  = document.getElementById('advCard');
             const keep = bulkTargetSheet.value;
             refreshBulkSheets(keep, bulkExternalTargetSheet?.value);
           }
+          if (advNote) advNote.textContent = '✅ تم تحديث قائمة الأوراق';
         })
         .withFailureHandler(err=> advNote.textContent = 'خطأ: '+(err?.message||''))
         .getAdminSheets();
