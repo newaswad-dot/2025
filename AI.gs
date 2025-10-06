@@ -1,98 +1,202 @@
-/***** === AI Local Helpers (No external APIs) === *****/
-
-// تطبيع ID: أرقام عربية -> لاتينية + حذف محارف مخفية + trim
-function aiNormalizeId(v){
-  var s = String(v == null ? '' : v);
-  var arabic = '٠١٢٣٤٥٦٧٨٩';
-  var out = '';
-  for (var i=0;i<s.length;i++){
-    var ch = s[i], idx = arabic.indexOf(ch);
-    out += (idx >= 0) ? String(idx) : ch;
-  }
-  return out.replace(/\u200B|\u200C|\u200D|\uFEFF/g,'').trim();
-}
-
-// مسافة Levenshtein (سريعة ومبسطة للأرقام)
-function aiLev(a, b){
-  a = String(a||''); b = String(b||'');
-  var m = a.length, n = b.length;
-  if (m === 0) return n; if (n === 0) return m;
-  var dp = new Array(n+1);
-  for (var j=0;j<=n;j++) dp[j]=j;
-  for (var i=1;i<=m;i++){
-    var prev=i-1, cur= i;
-    var ai=a.charCodeAt(i-1);
-    for (var j=1;j<=n;j++){
-      var tmp = dp[j];
-      var cost = (ai===b.charCodeAt(j-1)) ? 0 : 1;
-      dp[j] = Math.min(
-        dp[j]+1,     // حذف من b
-        cur+1,       // إضافة لـ b
-        prev+cost    // استبدال
-      );
-      prev = tmp; cur = dp[j];
+function aiSuggestIds(query, limit) {
+  try {
+    const rawQuery = String(query || '').trim();
+    const limitNum = Math.max(1, Math.min(30, Number(limit) || 12));
+    if (!rawQuery) {
+      return { ok: true, items: [], meta: { total: 0 } };
     }
-  }
-  return dp[n];
-}
 
-// نبني فهرس IDs من الكاش الحالي (وكيل + إدارة)
-function aiBuildIndex_(){
-  var cache = CacheService.getScriptCache();
-  var agentIndex  = cacheGetChunked_(KEY_AGENT_INDEX,   cache) || {};
-  var adminRowMap = cacheGetChunked_(KEY_ADMIN_ROW_MAP, cache) || {};
+    const cfg = getConfig_();
+    const sectionKey = getEffectiveSectionKey_(cfg) || 'default';
+    const cache = CacheService.getScriptCache();
 
-  var map = {}; // id -> {inAgent, inAdmin}
-  Object.keys(agentIndex).forEach(function(id){ map[id] = { inAgent:true, inAdmin:false }; });
-  Object.keys(adminRowMap).forEach(function(id){
-    if (!map[id]) map[id] = { inAgent:false, inAdmin:true };
-    else map[id].inAdmin = true;
-  });
-  return map;
-}
+    const agentIndex = cacheGetChunked_(qualifySectionCacheKey_(KEY_AGENT_INDEX, sectionKey), cache) || {};
+    const adminIdSet = cacheGetChunked_(qualifySectionCacheKey_(KEY_ADMIN_IDSET, sectionKey), cache) || {};
+    const coloredAgent = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_AGENT, sectionKey), cache) || {};
+    const coloredAdmin = cacheGetChunked_(qualifySectionCacheKey_(KEY_COLORED_ADMIN, sectionKey), cache) || {};
+    const infoGroups = cacheGetChunked_(qualifySectionCacheKey_(KEY_INFO_GROUPS, sectionKey), cache) || {};
+    const infoId2Group = cacheGetChunked_(qualifySectionCacheKey_(KEY_INFO_ID2GROUP, sectionKey), cache) || {};
 
-/**
- * اقتراح أقرب IDs
- * @param {string} query  الإدخال الخام
- * @param {number} k      عدد الاقتراحات (افتراضي 5)
- * @return {Object} { ok, items:[{id, score, source}] }
- */
-function aiSuggestIds(query, k){
-  try{
-    k = Math.max(1, Math.min(10, Number(k||5)));
-    var q = aiNormalizeId(query);
-    if (!q) return { ok:true, items: [] };
-
-    var index = aiBuildIndex_();
-    var ids = Object.keys(index);
-    // مرشّح أولي سريع: نفس الطول ±1، أو يبدأ/ينتهي بـ q
-    var cand = [];
-    for (var i=0;i<ids.length;i++){
-      var id = ids[i];
-      var n  = id.length, m = q.length;
-      if (Math.abs(n - m) <= 1 || id.indexOf(q) === 0 || q.indexOf(id) === 0) cand.push(id);
+    const agentKeys = Object.keys(agentIndex);
+    const adminKeys = Object.keys(adminIdSet);
+    if (!agentKeys.length && !adminKeys.length) {
+      return { ok: false, message: 'البيانات غير محمّلة. اضغط «تحميل البيانات» ثم أعد المحاولة.' };
     }
-    if (cand.length === 0) cand = ids; // fallback
 
-    // احسب مسافة التشابه ودرّب نقاط أبسط: score أصغر أفضل
-    var scored = cand.slice(0, 8000).map(function(id){
-      var d = aiLev(q, id);
-      var src = index[id];
-      // خصم بسيط إذا تطابق الطول/البادئة
-      if (id.length === q.length) d -= 0.2;
-      if (id.indexOf(q) === 0)   d -= 0.3;
-      return { id:id, dist:d, src: src };
-    }).sort(function(a,b){ return a.dist - b.dist; });
+    const numericQuery = /^\d+$/.test(rawQuery);
+    const loweredQuery = rawQuery.toLowerCase();
+    const suggestions = new Map();
 
-    var items = [];
-    for (var j=0; j<scored.length && items.length<k; j++){
-      var it = scored[j];
-      var label = it.src.inAgent && it.src.inAdmin ? 'الوكيل + الإدارة' :
-                  it.src.inAgent ? 'الوكيل' : 'الإدارة';
-      items.push({ id: it.id, score: Math.max(0, it.dist), source: label });
+    function addCandidate(id, node, meta) {
+      const key = String(id || '').trim();
+      if (!key) return;
+      const matchKind = meta && meta.matchKind ? meta.matchKind : (numericQuery ? 'id' : 'name');
+      const score = Number(meta && meta.score);
+      const matchValue = String(meta && meta.matchValue ? meta.matchValue : '');
+      const existing = suggestions.get(key);
+      if (existing) {
+        if (isFinite(score) && score < existing.score) {
+          existing.score = score;
+          existing.matchKind = matchKind;
+          existing.matchValue = matchValue;
+        }
+        if (!existing.node && node) existing.node = node;
+        return;
+      }
+      suggestions.set(key, {
+        id: key,
+        node: node || null,
+        score: isFinite(score) ? score : 9999,
+        matchKind: matchKind,
+        matchValue: matchValue,
+        adminOnly: !!(meta && meta.adminOnly)
+      });
     }
-    return { ok:true, items: items };
-  }catch(e){
-    return { ok:false, message: e.message || String(e) };
+
+    // ابحث داخل فهرس الوكيل (حسب الـID أو الاسم)
+    for (let i = 0; i < agentKeys.length; i++) {
+      const id = agentKeys[i];
+      const node = agentIndex[id] || {};
+      if (numericQuery) {
+        const idx = id.indexOf(rawQuery);
+        if (idx === -1) continue;
+        const score = (idx === 0 ? 0 : 2) + Math.abs(id.length - rawQuery.length) * 0.01 + i * 0.0001;
+        addCandidate(id, node, { score, matchKind: 'id', matchValue: id });
+        continue;
+      }
+
+      const names = Array.isArray(node.names) ? node.names : [];
+      let bestScore = Infinity;
+      let bestName = '';
+      for (let j = 0; j < names.length; j++) {
+        const name = String(names[j] || '');
+        if (!name) continue;
+        const lower = name.toLowerCase();
+        const idx = lower.indexOf(loweredQuery);
+        if (idx === -1) continue;
+        const candidateScore = (idx === 0 ? 0 : 1.5) + lower.length * 0.002 + j * 0.05 + i * 0.0001;
+        if (candidateScore < bestScore) {
+          bestScore = candidateScore;
+          bestName = name;
+        }
+      }
+      if (bestName) {
+        addCandidate(id, node, { score: bestScore, matchKind: 'name', matchValue: bestName });
+      }
+    }
+
+    if (numericQuery) {
+      for (let i = 0; i < adminKeys.length; i++) {
+        const id = adminKeys[i];
+        const idx = id.indexOf(rawQuery);
+        if (idx === -1) continue;
+        const score = (idx === 0 ? 1 : 3) + Math.abs(id.length - rawQuery.length) * 0.02 + i * 0.0001;
+        addCandidate(id, agentIndex[id] || null, { score, matchKind: 'id', matchValue: id, adminOnly: !agentIndex[id] });
+      }
+    } else {
+      const groupKeys = Object.keys(infoGroups || {});
+      for (let i = 0; i < groupKeys.length; i++) {
+        const group = infoGroups[groupKeys[i]];
+        if (!group) continue;
+        const name = String(group.name || '').trim();
+        if (!name) continue;
+        const lower = name.toLowerCase();
+        const idx = lower.indexOf(loweredQuery);
+        if (idx === -1) continue;
+        const baseScore = (idx === 0 ? 0.6 : 1.8) + lower.length * 0.001 + i * 0.0001;
+        const ids = Array.isArray(group.ids) ? group.ids : [];
+        for (let j = 0; j < ids.length; j++) {
+          const id = String((ids[j] && ids[j].id) || '').trim();
+          if (!id) continue;
+          addCandidate(id, agentIndex[id] || null, { score: baseScore + j * 0.05, matchKind: 'name', matchValue: name });
+        }
+      }
+    }
+
+    if (!suggestions.size) {
+      return { ok: true, items: [], meta: { total: 0 } };
+    }
+
+    const items = [];
+    suggestions.forEach((entry, id) => {
+      const node = entry.node || agentIndex[id] || null;
+      const inAgent = !!node;
+      const inAdmin = !!adminIdSet[id];
+
+      let status = 'غير موجود';
+      let total = 0;
+      let rowsCount = 0;
+      let primaryName = '';
+
+      if (inAgent) {
+        const rows = Array.isArray(node.rows) ? node.rows : [];
+        rowsCount = rows.length;
+        total = Number(node.sum || 0);
+        const names = Array.isArray(node.names) ? node.names : [];
+        if (names.length) {
+          primaryName = String(names[0] || '').trim();
+        }
+        if (rowsCount > 0) {
+          status = inAdmin
+            ? (rowsCount > 1 ? 'سحب وكالة - راتبين' : 'سحب وكالة')
+            : (rowsCount > 1 ? 'راتبين' : 'وكالة');
+        } else if (inAdmin) {
+          status = 'ادارة';
+        }
+      } else if (inAdmin) {
+        status = 'ادارة';
+      }
+
+      if (!primaryName && entry.matchKind === 'name' && entry.matchValue) {
+        primaryName = String(entry.matchValue).trim();
+      }
+      if (!primaryName && infoId2Group && infoId2Group[id]) {
+        const gk = infoId2Group[id];
+        if (gk && infoGroups && infoGroups[gk] && infoGroups[gk].name) {
+          primaryName = String(infoGroups[gk].name || '').trim();
+        }
+      }
+
+      const isColoredAgent = !!coloredAgent[id];
+      const isColoredAdmin = !!coloredAdmin[id];
+      const colored = isColoredAgent || isColoredAdmin;
+
+      let duplicateLabel = '';
+      if (isColoredAgent && isColoredAdmin) duplicateLabel = 'مكرر';
+      else if (isColoredAgent) duplicateLabel = 'مكرر وكالة فقط';
+      else if (isColoredAdmin) duplicateLabel = 'مكرر ادارة فقط';
+
+      const totalFixed = Number.isFinite(total) ? Number(total.toFixed(2)) : 0;
+
+      items.push({
+        id: id,
+        status: status,
+        totalSalary: totalFixed,
+        colored: colored,
+        duplicateLabel: duplicateLabel,
+        rowsCount: rowsCount,
+        matchKind: entry.matchKind,
+        matchValue: entry.matchValue || '',
+        primaryName: primaryName,
+        inAgent: inAgent,
+        inAdmin: inAdmin,
+        score: entry.score
+      });
+    });
+
+    items.sort((a, b) => {
+      if (a.score !== b.score) return a.score - b.score;
+      if (a.matchKind !== b.matchKind) {
+        if (a.matchKind === 'id') return -1;
+        if (b.matchKind === 'id') return 1;
+      }
+      if (a.rowsCount !== b.rowsCount) return b.rowsCount - a.rowsCount;
+      return a.id.localeCompare(b.id, 'ar');
+    });
+
+    const limited = items.slice(0, limitNum);
+    return { ok: true, items: limited, meta: { total: items.length } };
+  } catch (err) {
+    return { ok: false, message: err && err.message ? err.message : String(err || '') };
   }
 }

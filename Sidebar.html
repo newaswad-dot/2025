@@ -44,10 +44,16 @@
     @media(min-width:520px){.app-shell{max-width:520px;}}
     .app-header{display:flex;align-items:center;gap:14px;}
     .hamburger{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border-radius:16px;background:var(--surface-strong);border:1px solid var(--border);color:var(--accent);box-shadow:0 10px 26px rgba(18,233,153,.18);}
-    .header-meta{display:flex;flex-direction:row;align-items:stretch;gap:12px;margin-inline-start:auto;flex-wrap:wrap;justify-content:flex-end;}
-    .counter-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface-strong);padding:10px 14px;border-radius:16px;min-width:98px;box-shadow:0 10px 28px rgba(23,30,44,.36);border:1px solid var(--border);}
-    .counter-pill .label{font-size:11px;color:var(--muted);letter-spacing:.4px;}
-    .counter-pill .value{font-size:18px;font-weight:800;color:var(--accent);}
+    .header-meta{margin-inline-start:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;}
+    .counter-cluster{display:flex;align-items:center;justify-content:center;gap:12px;background:var(--surface-strong);padding:10px 14px;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 30px rgba(16,26,44,.36);flex-wrap:wrap;}
+    .counter-mini{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:86px;padding:4px 0;flex:1 1 80px;}
+    .counter-mini .label{font-size:11px;color:var(--muted);letter-spacing:.4px;}
+    .counter-mini .value{font-size:16px;font-weight:800;color:var(--accent);}
+    .section-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid rgba(43,255,168,.26);background:rgba(43,255,168,.08);color:var(--accent);font-weight:700;white-space:nowrap;flex:0 0 auto;transition:background .18s ease,border .18s ease,color .18s ease;}
+    .section-chip .chip-label{font-size:11px;letter-spacing:.3px;color:var(--muted);}
+    .section-chip .chip-value{color:var(--text-strong);font-size:13px;}
+    .section-chip.is-empty{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);color:var(--muted);}
+    .section-chip.is-empty .chip-value{color:var(--muted);}
     .view-switch{display:flex;gap:10px;}
     .view-tab{flex:1;background:var(--surface);border:1px solid transparent;border-radius:16px;padding:12px 14px;color:var(--muted);font-weight:700;}
     .view-tab.active{background:linear-gradient(135deg,var(--surface-strong),#1c2537);color:var(--accent);border-color:rgba(43,255,168,.22);box-shadow:0 12px 32px rgba(26,214,145,.22);}
@@ -81,16 +87,16 @@
     #searchCard{background:var(--surface);border-radius:22px;box-shadow:none;border:1px solid rgba(255,255,255,.05);}
     #searchCard button{min-width:160px;}
     #searchCard .column button{width:100%;}
-    #nearbyBox{display:none;margin-top:12px;padding:14px 16px;border-radius:18px;background:rgba(15,23,34,0.9);border:1px solid rgba(43,255,168,.28);box-shadow:0 18px 42px rgba(14,146,112,.28);backdrop-filter:blur(18px);transition:transform .18s ease,opacity .18s ease;}
+    #nearbyBox{display:none;margin-top:12px;padding:16px;border-radius:18px;background:var(--surface-strong);border:1px solid var(--border);box-shadow:0 18px 42px rgba(8,14,26,.32);transition:transform .18s ease,opacity .18s ease;}
     #nearbyBox.show{display:block;opacity:1;transform:translateY(0);}
-    #nearbyBox:not(.show){opacity:0;transform:translateY(4px);}
+    #nearbyBox:not(.show){opacity:0;transform:translateY(6px);}
     .nearby-header{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin-bottom:10px;}
-    .nearby-list{display:flex;flex-direction:column;gap:8px;}
-    .nearby-item{border:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 14px;border-radius:14px;background:rgba(43,255,168,.1);color:var(--text);font-weight:700;text-align:right;cursor:pointer;transition:background .18s ease,border .18s ease,transform .18s ease;box-shadow:0 12px 28px rgba(12,70,54,.25);border:1px solid rgba(43,255,168,.18);}
-    .nearby-item:hover{background:rgba(43,255,168,.18);border-color:rgba(43,255,168,.35);}
+    .nearby-list{display:flex;flex-direction:column;gap:10px;}
+    .nearby-item{border:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-radius:14px;background:var(--surface);color:var(--text);font-weight:700;text-align:right;cursor:pointer;transition:background .18s ease,border .18s ease,transform .18s ease,box-shadow .18s ease;border:1px solid rgba(255,255,255,.06);box-shadow:0 12px 26px rgba(7,12,22,.28);}
+    .nearby-item:hover{background:rgba(43,255,168,.12);border-color:rgba(43,255,168,.24);}
     .nearby-item:active{transform:scale(.985);}
-    .nearby-item--primary{background:linear-gradient(135deg,rgba(43,255,168,.24),rgba(56,189,248,.24));border-color:rgba(56,189,248,.42);box-shadow:0 14px 34px rgba(43,255,168,.28);}
-    .nearby-item--primary:hover{background:linear-gradient(135deg,rgba(43,255,168,.32),rgba(56,189,248,.32));}
+    .nearby-item--primary{background:linear-gradient(135deg,rgba(43,255,168,.18),rgba(56,189,248,.18));border-color:rgba(56,189,248,.34);box-shadow:0 14px 32px rgba(26,94,81,.35);}
+    .nearby-item--primary:hover{background:linear-gradient(135deg,rgba(43,255,168,.24),rgba(56,189,248,.24));}
     .nearby-id{font-size:16px;font-variant-numeric:tabular-nums;color:var(--text-strong);}
     .nearby-status{font-size:13px;color:var(--muted);margin-inline-start:auto;}
     .nearby-diff{font-size:11px;color:rgba(226,232,240,.75);min-width:42px;text-align:left;direction:ltr;}
@@ -196,13 +202,19 @@
     <header class="app-header">
       <button id="menuToggle" class="hamburger" type="button" aria-label="القائمة">☰</button>
       <div class="header-meta">
-        <div class="counter-pill">
-          <span class="label">ملوّن</span>
-          <span id="qtColored" class="value">—</span>
-        </div>
-        <div class="counter-pill">
-          <span class="label">غير ملوّن</span>
-          <span id="qtUncolored" class="value">—</span>
+        <div class="counter-cluster">
+          <div class="counter-mini">
+            <span class="label">ملوّن</span>
+            <span id="qtColored" class="value">—</span>
+          </div>
+          <div class="counter-mini">
+            <span class="label">غير ملوّن</span>
+            <span id="qtUncolored" class="value">—</span>
+          </div>
+          <div id="sectionChip" class="section-chip" title="القسم الحالي">
+            <span class="chip-label">القسم</span>
+            <span id="headerSectionLabel" class="chip-value">—</span>
+          </div>
         </div>
       </div>
     </header>
@@ -485,6 +497,8 @@
     const pasteHint      = document.getElementById('pasteHint');
     const nearbyBox      = document.getElementById('nearbyBox');
     const nearbyList     = document.getElementById('nearbyList');
+    const headerSectionLabelEl = document.getElementById('headerSectionLabel');
+    const sectionChipEl        = document.getElementById('sectionChip');
 
     const resultsBox  = document.getElementById('resultsBox');
     const statusBadge = document.getElementById('statusBadge');
@@ -627,6 +641,7 @@ const advCard  = document.getElementById('advCard');
         performSectionSwitch(selected);
       });
     }
+    updateHeaderSectionUI('');
     fetchSections();
 
     const viewsMap = { main: mainViewEl, bulk: bulkViewEl };
@@ -685,6 +700,8 @@ const advCard  = document.getElementById('advCard');
     let sectionOptions = [];
     let activeSectionKey = '';
     let activeSectionLabel = '';
+    let manualSearchTimer = null;
+    let skipNextManualDebounce = false;
 
     const BULK_PAGE_SIZE = 20;
     const BULK_MOBILE_STORAGE_KEY = 'bulk_mobile_enabled';
@@ -729,6 +746,21 @@ const advCard  = document.getElementById('advCard');
     function setSectionStatus(message){
       if (menuSectionStatus) {
         menuSectionStatus.textContent = message || '';
+      }
+    }
+
+    function updateHeaderSectionUI(label){
+      const safe = String(label || '').trim();
+      window.__activeSectionLabel = safe;
+      if (headerSectionLabelEl) {
+        headerSectionLabelEl.textContent = safe || '—';
+      }
+      if (sectionChipEl) {
+        sectionChipEl.classList.toggle('is-empty', !safe);
+        sectionChipEl.title = safe ? `القسم الحالي: ${safe}` : 'لم يتم اختيار قسم';
+      }
+      if (window.__aiClient && typeof window.__aiClient.setActiveSection === 'function') {
+        window.__aiClient.setActiveSection(safe);
       }
     }
 
@@ -778,6 +810,7 @@ const advCard  = document.getElementById('advCard');
         const match = sectionOptions.find(s => s.key === activeSectionKey);
         activeSectionLabel = res.activeLabel || (match ? match.label : '');
         rebuildSectionOptions();
+        updateHeaderSectionUI(activeSectionLabel);
         if (activeSectionLabel) {
           setSectionStatus('✅ القسم الحالي: ' + activeSectionLabel);
         } else {
@@ -790,6 +823,7 @@ const advCard  = document.getElementById('advCard');
         activeSectionLabel = '';
         menuSectionSelect.innerHTML = '';
         menuSectionSelect.disabled = true;
+        updateHeaderSectionUI('');
       }
     }
 
@@ -811,6 +845,7 @@ const advCard  = document.getElementById('advCard');
         activeSectionKey = res.section?.key || targetKey;
         activeSectionLabel = res.section?.label || (sectionOptions.find(s => s.key === activeSectionKey)?.label || '');
         rebuildSectionOptions();
+        updateHeaderSectionUI(activeSectionLabel);
         const baseMsg = res.loadResult?.message || 'تم تحديث بيانات القسم.';
         const serverOk = res.loadResult?.success !== false;
         applyLoadResults(baseMsg, res.snapshot, { serverSuccess: serverOk });
@@ -938,7 +973,9 @@ const advCard  = document.getElementById('advCard');
         `;
         btn.addEventListener('click', () => {
           idInput.value = suggestion.id || '';
-          doSearch();
+          clearTimeout(manualSearchTimer);
+          manualSearchTimer = null;
+          doSearch({ allowSuggestions:true });
         });
         nearbyList.appendChild(btn);
       });
@@ -1610,7 +1647,9 @@ const advCard  = document.getElementById('advCard');
       const v = lastIdText.textContent || '';
       if (!v) return;
       idInput.value = v;
-      doSearch();
+      clearTimeout(manualSearchTimer);
+      manualSearchTimer = null;
+      doSearch({ manual:true, allowSuggestions:false });
     });
 
     /******** تحميل الأوراق ********/
@@ -1777,19 +1816,53 @@ const advCard  = document.getElementById('advCard');
         const txt = await navigator.clipboard.readText();
         if (txt && txt.trim()){
           idInput.value = txt.trim();
-          doSearch();
+          clearTimeout(manualSearchTimer);
+          manualSearchTimer = null;
+          doSearch({ manual:true, allowSuggestions:false });
           return;
         }
       }catch(_){}
       idInput.focus(); idInput.select();
       pasteHint.textContent = 'الصق يدويًا وسيبدأ البحث تلقائيًا…';
-      const once = ()=>{ pasteHint.textContent = ''; idInput.removeEventListener('input', once); setTimeout(doSearch, 0); };
+      const once = ()=>{
+        pasteHint.textContent = '';
+        idInput.removeEventListener('input', once);
+        skipNextManualDebounce = true;
+        setTimeout(()=>{
+          doSearch({ manual:true, allowSuggestions:false });
+          skipNextManualDebounce = false;
+        }, 0);
+      };
       idInput.addEventListener('input', once, { once:true });
     });
-    idInput.addEventListener('paste', ()=> setTimeout(doSearch, 0));
-    idInput.addEventListener('keyup', e=>{ if (e.key === 'Enter') doSearch(); });
+    idInput.addEventListener('paste', ()=>{
+      skipNextManualDebounce = true;
+      setTimeout(()=>{
+        clearTimeout(manualSearchTimer);
+        manualSearchTimer = null;
+        doSearch({ manual:true, allowSuggestions:false });
+        skipNextManualDebounce = false;
+      }, 0);
+    });
+    idInput.addEventListener('keyup', e=>{
+      if (e.key === 'Enter'){
+        clearTimeout(manualSearchTimer);
+        manualSearchTimer = null;
+        doSearch({ manual:true, allowSuggestions:false });
+      }
+    });
     idInput.addEventListener('input', ()=>{
-      if (!idInput.value.trim()) clearNearbySuggestions();
+      if (skipNextManualDebounce) return;
+      const val = String(idInput.value || '').trim();
+      clearTimeout(manualSearchTimer);
+      if (!val){
+        manualSearchTimer = null;
+        doSearch({ manual:true, allowSuggestions:false });
+        return;
+      }
+      manualSearchTimer = setTimeout(()=>{
+        doSearch({ manual:true, allowSuggestions:false });
+      }, 140);
     });
 
     /******** رندر النتائج ********/
@@ -2143,8 +2216,9 @@ const advCard  = document.getElementById('advCard');
       };
     }
 
-  function doSearch(){
+  function doSearch(options = {}){
     const id = String(idInput.value||'').trim();
+    const allowSuggestions = options && options.allowSuggestions !== false;
     if (!id){
       applyBadges('غير موجود', null, false);
       amountText.textContent = '—';
@@ -2198,7 +2272,7 @@ const advCard  = document.getElementById('advCard');
       clearNearbySuggestions();
     }
     // إذا غير موجود محليًا (قد يكون "إدارة فقط"): لا نعرض "غير موجود" — ننتظر رد السيرفر.
-    else {
+    else if (allowSuggestions) {
       renderNearbySuggestions(id);
     }
 
@@ -2210,17 +2284,17 @@ const advCard  = document.getElementById('advCard');
         if (mySeq !== window.__qseq) return; // تجاهل الردود المتأخرة
         if (!res || res.status === 'error'){
           if (res && res.message) renderResult({ status:'error', message: res.message });
-          renderNearbySuggestions(id);
+          if (allowSuggestions) renderNearbySuggestions(id); else clearNearbySuggestions();
           return;
         }
         renderResult(res);
-        if (res.status === 'غير موجود') renderNearbySuggestions(id);
+        if (allowSuggestions && res.status === 'غير موجود') renderNearbySuggestions(id);
         else clearNearbySuggestions();
         renderPersonCard(id);
       })
       .withFailureHandler(err=>{
         if (err && err.message) renderResult({ status:'error', message: err.message });
-        renderNearbySuggestions(id);
+        if (allowSuggestions) renderNearbySuggestions(id); else clearNearbySuggestions();
       })
       .searchId(id, pct);
   }
@@ -2665,7 +2739,6 @@ const advCard  = document.getElementById('advCard');
 })();
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('AIClient').getContent(); ?>
-</script>
 <!-- ✅ ترتيب موحّد + تثبيت الأدوات السريعة + تنسيق صف البحث -->
  
 <script>
