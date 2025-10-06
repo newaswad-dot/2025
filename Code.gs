@@ -1,32 +1,151 @@
 /*****************************
  * إعدادات عامة + قراءة Settings
  *****************************/
-function getConfig_() {
+const PROP_ACTIVE_SECTION = 'activeSectionRow_v1';
+const PROP_CACHE_SECTION  = 'cacheSectionRow_v1';
+
+function readSettingsSections_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName("Settings");
-  if (!sh) throw new Error("❌ لم يتم العثور على ورقة Settings. أنشئ ورقة باسم Settings وضع القيم في الصف 2.");
+  const sh = ss.getSheetByName('Settings');
+  if (!sh) {
+    throw new Error('❌ لم يتم العثور على ورقة Settings. أنشئ ورقة باسم Settings وضع القيم في الصفوف المناسبة.');
+  }
 
-  // الصف2:
-  // A=AGENT_SHEET_ID, B=AGENT_SHEET_NAME, C=ADMIN_SHEET_ID, D=ADMIN_SHEET_NAME
-  // E=DATA1_ID, F=DATA1_NAME, G=DATA2_ID, H=DATA2_NAME  (اختياري)
-  const row = sh.getRange(2, 1, 1, 8).getValues()[0];
-  const cfg = {
-    AGENT_SHEET_ID:   String(row[0] || "").trim(),
-    AGENT_SHEET_NAME: String(row[1] || "").trim() || "SHEET",
-    ADMIN_SHEET_ID:   String(row[2] || "").trim(),
-    ADMIN_SHEET_NAME: String(row[3] || "").trim() || "Sheet1",
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) {
+    return { sections: [], map: {} };
+  }
 
-    DATA1_ID:         String(row[4] || "").trim(),
-    DATA1_NAME:       String(row[5] || "").trim() || "معلومات السلطان",
-    DATA2_ID:         String(row[6] || "").trim(),
-    DATA2_NAME:       String(row[7] || "").trim() || "معلومات الفرعيين",
-  };
-  const missing = [];
-  if (!cfg.AGENT_SHEET_ID)   missing.push("AGENT_SHEET_ID");
-  if (!cfg.AGENT_SHEET_NAME) missing.push("AGENT_SHEET_NAME");
-  if (!cfg.ADMIN_SHEET_ID)   missing.push("ADMIN_SHEET_ID");
-  if (!cfg.ADMIN_SHEET_NAME) missing.push("ADMIN_SHEET_NAME");
-  if (missing.length) throw new Error("⚠️ إعدادات ناقصة في Settings: " + missing.join(", "));
+  const rangeWidth = Math.min(lastCol, 20);
+  const rowsCount = lastRow - 1;
+  const values = rowsCount > 0 ? sh.getRange(2, 1, rowsCount, rangeWidth).getValues() : [];
+
+  const sections = [];
+  const map = Object.create(null);
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i] || [];
+    const rowIndex = i + 2;
+    const agentSheetId = String((row[0] || '')).trim();
+    const adminSheetId = String((row[2] || '')).trim();
+    const hasData = agentSheetId || adminSheetId || String((row[1] || '')).trim() || String((row[3] || '')).trim();
+    if (!hasData) {
+      // تجاهل الصفوف الفارغة بالكامل
+      continue;
+    }
+
+    const cfg = {
+      AGENT_SHEET_ID:   agentSheetId,
+      AGENT_SHEET_NAME: String((row[1] || '')).trim() || 'SHEET',
+      ADMIN_SHEET_ID:   adminSheetId,
+      ADMIN_SHEET_NAME: String((row[3] || '')).trim() || 'Sheet1',
+      DATA1_ID:         String((row[4] || '')).trim(),
+      DATA1_NAME:       String((row[5] || '')).trim() || 'معلومات السلطان',
+      DATA2_ID:         String((row[6] || '')).trim(),
+      DATA2_NAME:       String((row[7] || '')).trim() || 'معلومات الفرعيين',
+      EXTERNAL_ADMIN_URL: '',
+      EXTERNAL_ADMIN_SHEET: '',
+      EXTERNAL_AGENT_URL: '',
+      EXTERNAL_AGENT_SHEET: ''
+    };
+
+    const missing = [];
+    if (!cfg.AGENT_SHEET_ID)   missing.push('AGENT_SHEET_ID');
+    if (!cfg.AGENT_SHEET_NAME) missing.push('AGENT_SHEET_NAME');
+    if (!cfg.ADMIN_SHEET_ID)   missing.push('ADMIN_SHEET_ID');
+    if (!cfg.ADMIN_SHEET_NAME) missing.push('ADMIN_SHEET_NAME');
+    if (missing.length) {
+      throw new Error('⚠️ إعدادات ناقصة في Settings (الصف ' + rowIndex + '): ' + missing.join(', '));
+    }
+
+    // روابط الملفات الخارجية (الإدارة والوكيل)
+    const adminUrl = normalizeSheetLink_(row[8]);
+    if (adminUrl) {
+      cfg.EXTERNAL_ADMIN_URL = adminUrl;
+      cfg.EXTERNAL_ADMIN_SHEET = String((row[9] || '')).trim();
+    }
+
+    let agentUrlSlot = null;
+    for (let c = 10; c < row.length; c++) {
+      const norm = normalizeSheetLink_(row[c]);
+      if (norm) {
+        agentUrlSlot = { index: c, url: norm };
+        break;
+      }
+    }
+    if (agentUrlSlot) {
+      cfg.EXTERNAL_AGENT_URL = agentUrlSlot.url;
+      const sheetIdx = agentUrlSlot.index + 1;
+      if (sheetIdx < row.length) {
+        cfg.EXTERNAL_AGENT_SHEET = String((row[sheetIdx] || '')).trim();
+      }
+    }
+
+    let label = '';
+    for (let c = 10; c < row.length; c++) {
+      if (agentUrlSlot && (c === agentUrlSlot.index || c === agentUrlSlot.index + 1)) {
+        continue;
+      }
+      const raw = String((row[c] || '')).trim();
+      if (!raw) continue;
+      if (normalizeSheetLink_(raw)) continue;
+      label = raw;
+      break;
+    }
+    if (!label) {
+      label = 'قسم ' + (sections.length + 1);
+    }
+
+    const key = String(rowIndex);
+    const entry = {
+      key: key,
+      label: label,
+      rowIndex: rowIndex,
+      config: cfg
+    };
+    sections.push(entry);
+    map[key] = entry;
+  }
+
+  return { sections: sections, map: map };
+}
+
+function resolveActiveSectionKey_(preferredKey) {
+  const data = readSettingsSections_();
+  if (!data.sections.length) {
+    throw new Error('⚠️ لم يتم إعداد أي قسم في ورقة Settings.');
+  }
+
+  const userProps = PropertiesService.getUserProperties();
+  let key = String(preferredKey || '').trim();
+  if (key && !data.map[key]) {
+    key = '';
+  }
+  if (!key && userProps) {
+    const stored = String(userProps.getProperty(PROP_ACTIVE_SECTION) || '').trim();
+    if (stored && data.map[stored]) {
+      key = stored;
+    }
+  }
+  if (!key || !data.map[key]) {
+    key = data.sections[0].key;
+  }
+  if (userProps) {
+    userProps.setProperty(PROP_ACTIVE_SECTION, key);
+  }
+  return { key: key, entry: data.map[key], listing: data.sections };
+}
+
+function getConfig_(options) {
+  const preferredKey = options && options.sectionKey;
+  const resolved = resolveActiveSectionKey_(preferredKey);
+  if (!resolved.entry) {
+    throw new Error('⚠️ لم يتم العثور على إعدادات القسم المحدد.');
+  }
+  const cfg = Object.assign({}, resolved.entry.config);
+  cfg.sectionKey = resolved.key;
+  cfg.sectionLabel = resolved.entry.label;
   return cfg;
 }
 
@@ -35,43 +154,67 @@ function getConfigStatus() {
   catch(e){ return { ok:false, message:e.message }; }
 }
 
+function getAvailableSections() {
+  try {
+    const data = readSettingsSections_();
+    if (!data.sections.length) {
+      throw new Error('⚠️ لم يتم العثور على أي أقسام في ورقة Settings.');
+    }
+    const cfg = getConfig_();
+    return {
+      ok: true,
+      sections: data.sections.map(s => ({ key: s.key, label: s.label })),
+      activeKey: cfg.sectionKey,
+      activeLabel: cfg.sectionLabel
+    };
+  } catch (e) {
+    return { ok:false, message:e.message };
+  }
+}
+
+function switchActiveSection(sectionKey) {
+  try {
+    const data = readSettingsSections_();
+    if (!data.sections.length) {
+      throw new Error('⚠️ لم يتم إعداد أي قسم في ورقة Settings.');
+    }
+    const key = String(sectionKey || '').trim();
+    const entry = data.map[key];
+    if (!entry) {
+      throw new Error('⚠️ القسم المحدد غير معروف.');
+    }
+    const userProps = PropertiesService.getUserProperties();
+    if (userProps) {
+      userProps.setProperty(PROP_ACTIVE_SECTION, key);
+    }
+
+    const loadResult = loadDataIntoCache();
+    const snapshot = getSearchSnapshotLight();
+    return {
+      ok: true,
+      section: { key: key, label: entry.label },
+      loadResult: loadResult,
+      snapshot: snapshot
+    };
+  } catch (e) {
+    return { ok:false, message:e.message };
+  }
+}
+
 function getExternalSheetLinksFromSettings() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName('Settings');
-  if (!sh) throw new Error('❌ لم يتم العثور على ورقة Settings.');
-
-  const lastRow = sh.getLastRow();
-  if (lastRow < 1) throw new Error('⚠️ لا توجد بيانات في ورقة Settings للروابط الخارجية.');
-
-  const data = sh.getRange(1, 9, lastRow, 4).getDisplayValues(); // I:J:K:L
-
-  const admin = { url: '', sheetName: '' };
-  const agent = { url: '', sheetName: '' };
-
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i];
-    if (!admin.url) {
-      const normalized = normalizeSheetLink_(row[0]);
-      if (normalized) {
-        admin.url = normalized;
-        admin.sheetName = String(row[1] || '').trim();
-      }
-    }
-    if (!agent.url) {
-      const normalized = normalizeSheetLink_(row[2]);
-      if (normalized) {
-        agent.url = normalized;
-        agent.sheetName = String(row[3] || '').trim();
-      }
-    }
-    if (admin.url && agent.url) break;
-  }
-
+  const cfg = getConfig_();
+  const admin = {
+    url: cfg.EXTERNAL_ADMIN_URL || '',
+    sheetName: cfg.EXTERNAL_ADMIN_SHEET || ''
+  };
+  const agent = {
+    url: cfg.EXTERNAL_AGENT_URL || '',
+    sheetName: cfg.EXTERNAL_AGENT_SHEET || ''
+  };
   if (!admin.url) {
-    throw new Error('⚠️ رابط ملف الإدارة الخارجي مفقود (تحقّق من العمود I في Settings).');
+    throw new Error('⚠️ رابط ملف الإدارة الخارجي مفقود في القسم الحالي (تحقّق من الأعمدة I-J).');
   }
-
-  return { admin, agent };
+  return { admin: admin, agent: agent };
 }
 
 /*****************************
@@ -542,6 +685,7 @@ function loadDataIntoCache() {
   try {
     const cache = CacheService.getScriptCache();
     const cfg = getConfig_();
+    const sectionLabel = cfg.sectionLabel || 'القسم الحالي';
 
     // الوكيل
     const agSS = SpreadsheetApp.openById(cfg.AGENT_SHEET_ID);
@@ -615,9 +759,16 @@ function loadDataIntoCache() {
       externalSummary = ' — ⚠️ فشل تحميل الخارجي: ' + (extErr && extErr.message ? extErr.message : String(extErr || ''));
     }
 
+    try {
+      const docProps = PropertiesService.getDocumentProperties();
+      if (docProps && cfg.sectionKey) {
+        docProps.setProperty(PROP_CACHE_SECTION, String(cfg.sectionKey));
+      }
+    } catch (_) {}
+
     return {
       success:true,
-      message:'تم التحميل ✓ — الوكيل: '+agentRows+' صف / '+agentUnique+' ID فريد — الإدارة: '+adminRows+' صف.' + externalSummary
+      message:'[' + sectionLabel + '] تم التحميل ✓ — الوكيل: '+agentRows+' صف / '+agentUnique+' ID فريد — الإدارة: '+adminRows+' صف.' + externalSummary
     };
   } catch (e) {
     return { success:false, message:'خطأ: ' + e.message };
