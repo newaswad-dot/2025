@@ -911,12 +911,11 @@ const advCard  = document.getElementById('advCard');
     function setBulkBusy(flag){
       bulkBusy = !!flag;
       const disabled = bulkBusy;
-      [bulkPasteBtn, bulkExecuteBtn, bulkCopyAllBtn, bulkCopySalaryBtn, bulkResetBtn,
+      [bulkPasteBtn, bulkExecuteBtn,
         bulkScope, bulkTargetSheet, bulkRefreshSheets, bulkNewSheet, bulkCreateSheet,
         bulkExternalTargetSheet, bulkExternalRefreshSheets, bulkExternalNewSheet, bulkExternalCreateSheet,
         bulkAdminColor, bulkWithdrawColor, bulkDiscount, bulkIdsInput]
-        .forEach(el => { if (el) el.disabled = disabled && el !== bulkResetBtn; });
-      if (bulkResetBtn) bulkResetBtn.disabled = disabled;
+        .forEach(el => { if (el) el.disabled = disabled; });
     }
 
     function updateBulkProgress(done, total, label){
@@ -932,8 +931,9 @@ const advCard  = document.getElementById('advCard');
       const hasIds = bulkIds.length > 0;
       if (bulkPasteBtn) bulkPasteBtn.disabled = bulkBusy;
       if (bulkExecuteBtn) bulkExecuteBtn.disabled = !hasIds || !bulkAnalyzed || bulkBusy;
-      if (bulkCopyAllBtn) bulkCopyAllBtn.disabled = !bulkExecuted || bulkBusy;
-      if (bulkCopySalaryBtn) bulkCopySalaryBtn.disabled = !bulkExecuted || bulkBusy;
+      if (bulkCopyAllBtn) bulkCopyAllBtn.disabled = !bulkExecuted;
+      if (bulkCopySalaryBtn) bulkCopySalaryBtn.disabled = !bulkExecuted;
+      if (bulkResetBtn) bulkResetBtn.disabled = bulkBusy || !bulkExecuted;
     }
 
     function renderBulkResults(){
