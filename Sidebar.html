@@ -86,11 +86,14 @@
     .pill .title{font-size:12px;color:var(--muted);}
     .pill .value{font-weight:700;font-size:15px;color:var(--text);}
     #mainPrimaryCard{padding:28px;display:flex;flex-direction:column;gap:24px;}
-    .main-primary-grid{display:grid;gap:18px;}
+    .primary-interaction{display:flex;flex-direction:column;gap:24px;}
+    .primary-suggest-slot{min-height:0;}
     #mainView.view-panel{gap:24px;}
     #bulkView.view-panel{gap:24px;}
-    @media(min-width:640px){.main-primary-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);}}
     #resultsBox{padding:26px 22px;text-align:center;background:radial-gradient(circle at top,#1a2e2a 0%,#0b1118 55%,#090d13 100%);border:1px solid rgba(43,255,168,.22);box-shadow:0 28px 70px rgba(30,255,168,.18);display:flex;flex-direction:column;gap:12px;justify-content:center;border-radius:26px;}
+    @media(min-width:640px){
+      .primary-interaction{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start;gap:24px;}
+    }
     #resultsBox .badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:0;}
     #searchCard{background:linear-gradient(160deg,rgba(18,26,38,.94),rgba(7,12,22,.88));border-radius:22px;box-shadow:0 18px 42px rgba(6,10,20,.4);border:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column;gap:16px;padding:22px 20px;}
     #searchCard button{min-width:160px;}
@@ -204,12 +207,13 @@
       .view-panel{gap:32px;}
       #mainView.view-panel.active{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-content:start;}
       #mainPrimaryCard{grid-column:1 / span 7;}
-      #mainPrimaryCard .main-primary-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:stretch;}
+      .primary-interaction{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:28px;}
       #resultsBox,#searchCard{height:100%;}
+      .primary-suggest-slot{grid-column:auto;}
       #advCard{grid-column:8 / span 5;}
       #advCard .adv-control-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
       #advCard .row.stretch>*,#advCard .row.stretch>button{flex:1;}
-      #aiMountHere,#afterAiHook{margin-top:auto;}
+      #afterAiHook{margin-top:auto;}
       #bulkView.view-panel{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-content:start;}
       #bulkCard{grid-column:1 / span 7;}
       #bulkCard .bulk-input-grid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;}
@@ -252,7 +256,7 @@
 
     <section id="mainView" class="view-panel active">
       <div class="card" id="mainPrimaryCard">
-        <div class="main-primary-grid">
+        <div class="primary-interaction">
           <div id="resultsBox">
             <div class="badges">
               <span id="statusBadge" class="badge badge--loading">—</span>
@@ -277,6 +281,7 @@
             </div>
           </div>
         </div>
+        <div id="aiMountHere" class="primary-suggest-slot"></div>
       </div>
 
       <div class="card" id="advCard">
@@ -312,6 +317,8 @@
           <button id="createSheetBtn" class="btn-ghost" type="button">إنشاء</button>
         </div>
 
+        <div id="aiMobileMountHost" class="primary-suggest-slot"></div>
+
         <div class="row toggles-row">
           <div class="row" style="gap:8px;align-items:center;">
             <label class="small" style="margin:0;">الخصم %</label>
@@ -332,15 +339,6 @@
             </label>
           </div>
         </div>
-
-        <div class="adv-subcard" id="bulkToggleCard">
-          <div class="row" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-            <strong>إظهار أداة البحث الجماعي</strong>
-            <button id="bulkToggleBtn" class="btn-blue" type="button" style="min-width:130px">تفعيل الأداة</button>
-          </div>
-          <div id="bulkToggleNote" class="muted">تظهر الأداة في الموبايل بعد التفعيل (20 نتيجة لكل صفحة).</div>
-        </div>
-
         <div class="adv-subcard" id="personCard">
           <div class="row" style="justify-content:space-between; align-items:center">
             <strong>بيانات صاحب الـID</strong>
@@ -353,7 +351,6 @@
           <textarea id="personMsg" rows="8" style="margin-top:8px;" readonly></textarea>
         </div>
 
-        <div id="aiMountHere"></div>
         <div id="afterAiHook"></div>
       </div>
 
@@ -552,6 +549,35 @@
       loadCardMedia.addListener(placeLoadCard);
     }
 
+    const aiMountSlot    = document.getElementById('aiMountHere');
+    const aiMobileMount  = document.getElementById('aiMobileMountHost');
+    const aiMountHome    = aiMountSlot ? { parent: aiMountSlot.parentNode, next: aiMountSlot.nextSibling } : null;
+    const aiMobileMedia  = window.matchMedia('(max-width: 640px)');
+
+    function placeAiSuggestions(){
+      if (!aiMountSlot || !aiMountHome || !aiMountHome.parent) return;
+      if (aiMobileMedia.matches && aiMobileMount){
+        if (aiMountSlot.parentNode !== aiMobileMount){
+          aiMobileMount.appendChild(aiMountSlot);
+        }
+      } else {
+        if (aiMountSlot.parentNode !== aiMountHome.parent){
+          if (aiMountHome.next && aiMountHome.next.parentNode === aiMountHome.parent){
+            aiMountHome.parent.insertBefore(aiMountSlot, aiMountHome.next);
+          } else {
+            aiMountHome.parent.appendChild(aiMountSlot);
+          }
+        }
+      }
+    }
+
+    placeAiSuggestions();
+    if (typeof aiMobileMedia.addEventListener === 'function'){
+      aiMobileMedia.addEventListener('change', placeAiSuggestions);
+    } else if (typeof aiMobileMedia.addListener === 'function'){
+      aiMobileMedia.addListener(placeAiSuggestions);
+    }
+
     const idInput        = document.getElementById('idInput');
     const pasteSearchBtn = document.getElementById('pasteSearchBtn');
     const pasteHint      = document.getElementById('pasteHint');
@@ -603,8 +629,6 @@
     const bulkPrevBtn        = document.getElementById('bulkPrevBtn');
     const bulkNextBtn        = document.getElementById('bulkNextBtn');
     const bulkPageInfo       = document.getElementById('bulkPageInfo');
-    const bulkToggleBtn      = document.getElementById('bulkToggleBtn');
-    const bulkToggleNote     = document.getElementById('bulkToggleNote');
     const bulkMobileMount    = document.getElementById('bulkMobileMount');
 
     const bulkCardHome = bulkCardEl ? document.createComment('bulk-card-home') : null;
@@ -614,7 +638,7 @@
 
     // عنصر لعرض اسم العميل (من عمود B)
     const nameText   = document.getElementById('nameText');
-const advCard  = document.getElementById('advCard');
+    const advCard    = document.getElementById('advCard');
     const advNote  = document.getElementById('advNote');
     const sheetSelect   = document.getElementById('sheetSelect');
     const refreshSheetsBtn = document.getElementById('refreshSheetsBtn');
@@ -756,8 +780,6 @@ const advCard  = document.getElementById('advCard');
     let bulkExternalDefaultName = '';
     let bulkExternalErrorMessage = '';
     let bulkPage = 1;
-    let bulkMobileEnabled = false;
-
     let sectionOptions = [];
     let activeSectionKey = '';
     let activeSectionLabel = '';
@@ -765,15 +787,8 @@ const advCard  = document.getElementById('advCard');
     let skipNextManualDebounce = false;
 
     const BULK_PAGE_SIZE = 20;
-    const BULK_MOBILE_STORAGE_KEY = 'bulk_mobile_enabled';
     const JUST_COLORED_TTL = 120000;
     const SINGLE_DISCOUNT_STORAGE_KEY = 'single_discount_pct';
-
-    try {
-      bulkMobileEnabled = localStorage.getItem(BULK_MOBILE_STORAGE_KEY) === '1';
-    } catch (_) {
-      bulkMobileEnabled = false;
-    }
 
     const fmt = n => {
       const x = Number(n);
@@ -1000,7 +1015,7 @@ const advCard  = document.getElementById('advCard');
     function applyBulkMobileState(options = {}){
       if (!bulkCardEl) return;
       const mobile = isMobileLayout();
-      const active = bulkMobileEnabled && mobile;
+      const active = mobile;
 
       document.body.classList.toggle('bulk-mobile-active', !!active);
 
@@ -1010,41 +1025,19 @@ const advCard  = document.getElementById('advCard');
         return;
       }
 
-      if (active){
-        const anchor = document.getElementById('lgpMount') || bulkMobileMount || bulkCardHome;
-        if (anchor && anchor.parentNode){
-          const parent = anchor.parentNode;
-          if (anchor.nextSibling !== bulkCardEl) {
-            parent.insertBefore(bulkCardEl, anchor.nextSibling);
-          }
-        } else {
-          const retry = Number(options.retryCount || 0);
-          if (retry < 5){
-            setTimeout(() => applyBulkMobileState({ retryCount: retry + 1 }), 200);
-          }
+      const anchor = document.getElementById('lgpMount') || bulkMobileMount || bulkCardHome;
+      if (anchor && anchor.parentNode){
+        const parent = anchor.parentNode;
+        if (anchor.nextSibling !== bulkCardEl) {
+          parent.insertBefore(bulkCardEl, anchor.nextSibling);
         }
-        bulkCardEl.classList.remove('bulk-mobile-hidden');
       } else {
-        restoreBulkCardHome();
-        bulkCardEl.classList.add('bulk-mobile-hidden');
-      }
-    }
-
-    function updateBulkToggleUI(){
-      if (bulkToggleBtn){
-        bulkToggleBtn.textContent = bulkMobileEnabled ? 'إيقاف الأداة' : 'تفعيل الأداة';
-        bulkToggleBtn.classList.toggle('btn-blue', !bulkMobileEnabled);
-        bulkToggleBtn.classList.toggle('btn-red', bulkMobileEnabled);
-      }
-      if (bulkToggleNote){
-        if (isMobileLayout()){
-          bulkToggleNote.textContent = bulkMobileEnabled
-            ? 'سيظهر البحث الجماعي أسفل زر السجل (20 نتيجة لكل صفحة).'
-            : 'فعّل الإظهار لعرض البحث الجماعي هنا (20 نتيجة لكل صفحة).';
-        } else {
-          bulkToggleNote.textContent = 'يُعرض البحث الجماعي تلقائيًا على الشاشات الواسعة (20 نتيجة لكل صفحة).';
+        const retry = Number(options.retryCount || 0);
+        if (retry < 5){
+          setTimeout(() => applyBulkMobileState({ retryCount: retry + 1 }), 200);
         }
       }
+      bulkCardEl.classList.remove('bulk-mobile-hidden');
     }
 
     function signalBulkMobileChange(){
@@ -1756,21 +1749,11 @@ const advCard  = document.getElementById('advCard');
       updateBulkButtons();
       if (bulkIds.length) scheduleBulkAutoAnalyze('scope-change');
     });
-    if (bulkToggleBtn) bulkToggleBtn.addEventListener('click', () => {
-      bulkMobileEnabled = !bulkMobileEnabled;
-      try { localStorage.setItem(BULK_MOBILE_STORAGE_KEY, bulkMobileEnabled ? '1' : '0'); } catch (_) {}
-      updateBulkToggleUI();
-      applyBulkMobileState();
-      signalBulkMobileChange();
-    });
-
     window.addEventListener('resize', () => {
-      updateBulkToggleUI();
       applyBulkMobileState();
       signalBulkMobileChange();
     });
 
-    updateBulkToggleUI();
     applyBulkMobileState();
     setTimeout(signalBulkMobileChange, 0);
 
