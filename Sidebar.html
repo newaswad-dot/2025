@@ -23,7 +23,8 @@
       --border:rgba(255,255,255,0.07);
     }
     *{box-sizing:border-box;font-family:'Tajawal','Cairo','Segoe UI',sans-serif;}
-    body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;}
+    body{margin:0;background:radial-gradient(circle at top left,#0c1424 0%,#05080f 55%,#020307 100%);color:var(--text);min-height:100vh;display:flex;justify-content:center;position:relative;}
+    body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(45,212,255,.18),transparent 55%),radial-gradient(circle at 80% 10%,rgba(150,41,255,.18),transparent 60%);opacity:.75;pointer-events:none;z-index:-1;}
     body.drawer-open{overflow:hidden;}
     body,button,input,select,textarea{font-size:15px;}
     body.dark{background:#020307;color:var(--text);}
@@ -44,7 +45,7 @@
     @media(min-width:520px){.app-shell{max-width:520px;}}
     .app-header{display:flex;align-items:center;gap:14px;}
     .hamburger{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border-radius:16px;background:var(--surface-strong);border:1px solid var(--border);color:var(--accent);box-shadow:0 10px 26px rgba(18,233,153,.18);}
-    .header-meta{margin-inline-start:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;}
+    .header-meta{margin-inline-start:auto;display:flex;flex-wrap:wrap;align-items:stretch;justify-content:flex-end;gap:14px;flex:1 1 auto;}
     .counter-cluster{display:flex;align-items:center;justify-content:center;gap:12px;background:var(--surface-strong);padding:10px 14px;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 30px rgba(16,26,44,.36);flex-wrap:wrap;}
     .counter-mini{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:86px;padding:4px 0;flex:1 1 80px;}
     .counter-mini .label{font-size:11px;color:var(--muted);letter-spacing:.4px;}
@@ -59,12 +60,11 @@
     .view-tab.active{background:linear-gradient(135deg,var(--surface-strong),#1c2537);color:var(--accent);border-color:rgba(43,255,168,.22);box-shadow:0 12px 32px rgba(26,214,145,.22);}
     .view-panel{display:none;flex-direction:column;gap:16px;}
     .view-panel.active{display:flex;}
-    .card{background:var(--surface-strong);border-radius:26px;padding:18px;border:1px solid var(--border);box-shadow:0 18px 40px rgba(8,14,26,.45);}
-    .card.flat{background:var(--surface);border-color:rgba(255,255,255,.04);box-shadow:none;}
-    #loadCard{order:4;}
-    #loadCard button{width:100%;font-size:16px;}
-    #resultsBox{padding:26px 22px;text-align:center;background:radial-gradient(circle at top,#1a2e2a 0%,#0b1118 55%,#090d13 100%);border:1px solid rgba(43,255,168,.22);box-shadow:0 28px 70px rgba(30,255,168,.18);}
-    #resultsBox .badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+    .card{background:linear-gradient(145deg,var(--surface-strong),rgba(10,18,32,.96));border-radius:26px;padding:20px;border:1px solid rgba(255,255,255,.06);box-shadow:0 22px 50px rgba(5,12,22,.58);backdrop-filter:blur(6px);}
+    .card.flat{background:linear-gradient(150deg,rgba(18,26,38,.96),rgba(8,12,22,.92));border-color:rgba(255,255,255,.04);box-shadow:0 18px 42px rgba(6,10,20,.45);}
+    #loadCard{display:flex;flex-direction:column;gap:8px;background:var(--surface-strong);border-radius:22px;padding:14px 16px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 18px 42px rgba(6,10,20,.45);min-width:220px;max-width:280px;}
+    #loadCard button{width:100%;font-size:15px;}
+    #loadCard .muted{font-size:12px;}
     .badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.4px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);}
     .badge--withdraw{color:#4de4a1;border-color:rgba(77,228,161,.32);background:rgba(77,228,161,.09);}
     .badge--agent{color:#38bdf8;border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.08);}
@@ -84,31 +84,66 @@
     .pill{flex:1;min-width:120px;background:var(--surface);padding:12px 14px;border-radius:18px;border:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;gap:6px;}
     .pill .title{font-size:12px;color:var(--muted);}
     .pill .value{font-weight:700;font-size:15px;color:var(--text);}
-    #searchCard{background:var(--surface);border-radius:22px;box-shadow:none;border:1px solid rgba(255,255,255,.05);}
+    #mainPrimaryCard{padding:28px;display:flex;flex-direction:column;gap:24px;}
+    .main-primary-grid{display:grid;gap:18px;}
+    #mainView.view-panel{gap:24px;}
+    #bulkView.view-panel{gap:24px;}
+    @media(min-width:640px){.main-primary-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);}}
+    #resultsBox{padding:26px 22px;text-align:center;background:radial-gradient(circle at top,#1a2e2a 0%,#0b1118 55%,#090d13 100%);border:1px solid rgba(43,255,168,.22);box-shadow:0 28px 70px rgba(30,255,168,.18);display:flex;flex-direction:column;gap:12px;justify-content:center;}
+    #resultsBox .badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:0;}
+    #searchCard{background:linear-gradient(160deg,rgba(18,26,38,.94),rgba(7,12,22,.88));border-radius:22px;box-shadow:0 18px 42px rgba(6,10,20,.4);border:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column;gap:16px;padding:22px 20px;}
     #searchCard button{min-width:160px;}
     #searchCard .column button{width:100%;}
-    #advCard{background:var(--surface);border-radius:26px;border:1px solid rgba(255,255,255,.05);box-shadow:none;display:flex;flex-direction:column;gap:16px;}
+    #searchCard .actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:8px;}
+    #searchCard .actions .muted{flex:1;}
+    #advCard{background:linear-gradient(160deg,rgba(18,26,38,.96),rgba(7,10,20,.9));border-radius:26px;border:1px solid rgba(255,255,255,.06);box-shadow:0 22px 50px rgba(5,12,22,.48);display:flex;flex-direction:column;gap:24px;padding:28px;}
     #advCard .row{gap:10px;}
     #advCard select{background:var(--surface-strong);}
     #advCard .btn-ghost{border-color:rgba(43,255,168,.26);color:var(--accent);min-width:110px;}
     #advCard .btn-green{padding:16px;font-size:18px;border-radius:20px;}
-    #advCard input[type="color"]{width:44px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:var(--surface-strong);padding:0;}
+    #advCard .adv-top{display:flex;flex-direction:column;gap:12px;}
+    #advCard .adv-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+    #advCard .adv-control{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:18px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);backdrop-filter:blur(4px);}
+    #advCard .adv-control select{width:100%;min-height:44px;}
+    #advCard .adv-control--color{align-items:center;justify-content:center;}
+    #advCard .adv-control--color input[type="color"]{width:100%;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:var(--surface-strong);padding:0;}
     #advCard .toggle-chip{display:none;}
     #advCard .toggles-row{display:none;}
     #discountInput,#applyDiscountToMessage,#enableSalaryCorrection{display:none;}
-    #personCard{display:none !important;}
-    #bulkToggleCard,#bulkMobileMount{display:none !important;}
-    #bulkView .card{background:var(--surface);border-radius:26px;border:1px solid rgba(255,255,255,.05);}
-    #bulkCard h3{margin:0 0 12px 0;font-size:20px;color:var(--accent);}
-    #bulkCard .bulk-note{color:var(--muted);}
-    #bulkCard textarea{min-height:160px;background:var(--surface-strong);}
-    #bulkCard table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;border-radius:16px;overflow:hidden;}
+    .adv-subcard{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+    #personCard{display:none;}
+    #bulkView .card{background:linear-gradient(150deg,rgba(18,26,38,.96),rgba(8,12,22,.92));border-radius:26px;border:1px solid rgba(255,255,255,.05);}
+    #bulkCard{padding:28px;display:flex;flex-direction:column;gap:24px;}
+    #bulkCard h3{margin:0;font-size:22px;color:var(--accent);}
+    #bulkCard .bulk-header{display:flex;flex-direction:column;gap:6px;}
+    #bulkCard .bulk-note{color:var(--muted);font-size:13px;}
+    #bulkCard textarea{min-height:220px;background:var(--surface-strong);}
+    #bulkCard .bulk-input-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:flex-start;}
+    #bulkCard .bulk-actions-column{display:flex;flex-direction:column;gap:12px;}
+    #bulkCard .bulk-progress-wrap{display:flex;flex-direction:column;gap:12px;}
+    #bulkCard .bulk-progress{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;}
+    #bulkCard .bulk-progress-bar{background:linear-gradient(90deg,var(--accent),#38bdf8);}
+    #bulkCard .bulk-progress-text{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:13px;}
+    #bulkCard .bulk-progress-text span:first-child{color:var(--accent);font-weight:800;}
+    #bulkCard .bulk-counters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+    #bulkCard .bulk-counter{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:12px 14px;font-size:12px;color:var(--muted);}
+    #bulkCard .bulk-counter b{color:var(--text-strong);}
+    #bulkCard .bulk-table-wrap{display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);}
+    #bulkCard .bulk-empty{color:var(--muted);text-align:center;font-size:13px;}
+    #bulkCard table{width:100%;border-collapse:collapse;font-size:13px;border-radius:16px;overflow:hidden;}
     #bulkCard thead{background:var(--surface-strong);}
     #bulkCard th,#bulkCard td{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);text-align:right;}
     #bulkCard tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
-    #bulkCard .bulk-progress{height:8px;background:rgba(255,255,255,.04);border-radius:999px;overflow:hidden;}
-    #bulkCard .bulk-progress-bar{background:linear-gradient(90deg,var(--accent),#38bdf8);}
     #bulkCard .bulk-page-btn{background:var(--surface-strong);color:var(--text);border:1px solid rgba(255,255,255,.08);}
+    #bulkConfigCard{padding:28px;display:flex;flex-direction:column;gap:20px;}
+    .bulk-config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+    .bulk-config-block,.bulk-color-chip{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+    .bulk-color-chip{flex-direction:row;align-items:center;gap:12px;}
+    .bulk-color-chip input{flex:0 0 auto;}
+    .bulk-inline{display:flex;gap:12px;flex-wrap:wrap;}
+    .bulk-inline input{min-width:200px;}
+    .bulk-external{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:18px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);}
+    .bulk-discount-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);}
     .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:8;}
     .drawer-backdrop.show{opacity:1;pointer-events:auto;}
     #quickTools.drawer{position:fixed;top:40px;left:50%;transform:translate(-50%,-20px) scale(.96);width:90%;max-width:360px;background:var(--surface-strong);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:20px 18px;box-shadow:0 30px 80px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .22s ease;z-index:9;}
@@ -135,10 +170,8 @@
     .lastid{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);color:var(--muted);cursor:pointer;background:var(--surface-strong);font-size:12px;}
     #lastIdPill{margin-inline-start:auto;}
     #bulkCard .bulk-chip{background:rgba(255,93,117,.16);color:#ff8da4;border-radius:999px;padding:2px 8px;font-size:11px;}
-    .bulk-pagination{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap;}
+    .bulk-pagination{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;}
     .bulk-page-info{color:var(--muted);font-size:12px;}
-    .bulk-counters{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;font-size:12px;color:var(--muted);}
-    .bulk-counters b{color:var(--text-strong);}
     #bulkStatusText{font-size:13px;}
     #pasteHint{color:var(--muted);}
     #advNote{color:var(--muted);font-size:13px;}
@@ -147,40 +180,34 @@
     #statusChipsRow .chip{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);font-size:11px;color:var(--muted);}
     .view-panel footer{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;}
 
+    #advCard .adv-control .title{display:none;}
+    @media(max-width:768px){
+      #advCard .adv-control{gap:6px;padding:12px;}
+      #advCard .adv-control--color input[type="color"]{height:52px;}
+    }
+
     @media(min-width:1024px){
-      body{padding:42px 0;}
-      .app-shell{max-width:1260px;width:min(1260px,calc(100vw - 120px));padding:40px 48px;gap:26px;}
+      body{padding:0;align-items:stretch;}
+      .app-shell{max-width:none;width:100%;padding:46px clamp(32px,5vw,64px);gap:36px;min-height:100vh;display:grid;grid-template-rows:auto 1fr;}
       .app-header{padding-inline-end:8px;}
-      .header-meta{flex-wrap:nowrap;gap:18px;}
+      .header-meta{flex-wrap:nowrap;gap:22px;}
       .view-switch{justify-content:flex-start;gap:16px;}
       .view-tab{max-width:240px;}
-      .view-panel{gap:22px;}
-      #mainView.view-panel.active{display:grid;grid-template-columns:minmax(320px,360px) minmax(0,1fr);grid-template-areas:
-        'results adv'
-        'search adv'
-        'load adv'
-        'bulkToggle adv'
-        'bulkMount adv'
-        'person adv';
-        align-items:start;gap:22px 28px;
-      }
-      #resultsBox{grid-area:results;}
-      #searchCard{grid-area:search;}
-      #loadCard{grid-area:load;}
-      #bulkToggleCard{grid-area:bulkToggle;}
-      #bulkMobileMount{grid-area:bulkMount;}
-      #personCard{grid-area:person;}
-      #advCard{grid-area:adv;align-self:start;min-height:100%;}
-      #advCard .pill-group{flex-wrap:wrap;}
-      #advCard .pill{flex:1 1 200px;}
+      .view-panel{gap:32px;}
+      #mainView.view-panel.active{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-content:start;}
+      #mainPrimaryCard{grid-column:1 / span 7;}
+      #mainPrimaryCard .main-primary-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:stretch;}
+      #resultsBox,#searchCard{height:100%;}
+      #advCard{grid-column:8 / span 5;}
+      #advCard .adv-control-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
       #advCard .row.stretch>*,#advCard .row.stretch>button{flex:1;}
-      #loadCard button{width:100%;}
-      #bulkView.view-panel.active{display:flex;}
-      #bulkCard{padding:28px 32px;}
-      .bulk-input-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px;align-items:start;}
-      .bulk-input-grid textarea{min-height:320px;}
-      .bulk-actions-column{display:flex;flex-direction:column;gap:12px;}
-      .bulk-progress,.bulk-progress-text,.bulk-counters,.bulk-pagination{max-width:none;}
+      #aiMountHere,#afterAiHook{margin-top:auto;}
+      #bulkView.view-panel{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-content:start;}
+      #bulkCard{grid-column:1 / span 7;}
+      #bulkCard .bulk-input-grid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;}
+      #bulkCard textarea{min-height:280px;}
+      #bulkConfigCard{grid-column:8 / span 5;}
+      .bulk-config-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
   </style>
 </head>
@@ -203,6 +230,10 @@
             <span id="headerSectionLabel" class="chip-value">—</span>
           </div>
         </div>
+        <div class="load-card" id="loadCard">
+          <button id="reloadBtn" class="btn-red" type="button">تحميل البيانات</button>
+          <div id="loadNote" class="muted"></div>
+        </div>
       </div>
     </header>
 
@@ -212,58 +243,59 @@
     </div>
 
     <section id="mainView" class="view-panel active">
-      <div class="card" id="resultsBox">
-        <div class="badges">
-          <span id="statusBadge" class="badge badge--loading">—</span>
-          <span id="dupBadge" class="badge badge--dup" style="display:none">مكرر</span>
-          <span id="statusChipsRow"></span>
-        </div>
-        <div id="nameText" class="subline">—</div>
-        <div id="amountText" class="amountBig">—</div>
-        <div id="discountInfo" style="display:none"></div>
-        <div id="multiText" class="subline"></div>
-        <div id="extraDupInfo" class="muted" style="margin-top:12px"></div>
-      </div>
-
-      <div class="card flat" id="searchCard">
-        <label class="small">ID للبحث</label>
-        <div class="column stretch">
-          <input id="idInput" type="text" placeholder="أدخل ID هنا" autocomplete="off" inputmode="numeric">
-          <button id="pasteSearchBtn" class="btn-blue" type="button">لصق ثم بحث</button>
-        </div>
-        <div class="row" style="margin-top:8px;justify-content:space-between;">
-          <div id="pasteHint" class="muted"></div>
-          <div id="lastIdPill" class="lastid" style="display:none">آخر ID: <b id="lastIdText"></b></div>
-        </div>
-      </div>
-
-      <div class="card flat" id="advCard">
-        <button id="advRunBtn" class="btn-green" type="button">تنفيذ (حسب النتيجة)</button>
-        <div id="advNote" class="muted"></div>
-
-        <div class="pill-group">
-          <div class="pill">
-            <span class="title">الهدف</span>
-            <select id="sheetSelect"></select>
+      <div class="card" id="mainPrimaryCard">
+        <div class="main-primary-grid">
+          <div id="resultsBox">
+            <div class="badges">
+              <span id="statusBadge" class="badge badge--loading">—</span>
+              <span id="dupBadge" class="badge badge--dup" style="display:none">مكرر</span>
+              <span id="statusChipsRow"></span>
+            </div>
+            <div id="nameText" class="subline">—</div>
+            <div id="amountText" class="amountBig">—</div>
+            <div id="discountInfo" style="display:none"></div>
+            <div id="multiText" class="subline"></div>
+            <div id="extraDupInfo" class="muted" style="margin-top:12px"></div>
           </div>
-          <div class="pill">
+          <div id="searchCard">
+            <label class="small">ID للبحث</label>
+            <div class="column stretch">
+              <input id="idInput" type="text" placeholder="أدخل ID هنا" autocomplete="off" inputmode="numeric">
+              <button id="pasteSearchBtn" class="btn-blue" type="button">لصق ثم بحث</button>
+            </div>
+            <div class="actions">
+              <div id="pasteHint" class="muted"></div>
+              <div id="lastIdPill" class="lastid" style="display:none">آخر ID: <b id="lastIdText"></b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="advCard">
+        <div class="adv-top">
+          <button id="advRunBtn" class="btn-green" type="button">تنفيذ (حسب النتيجة)</button>
+          <div id="advNote" class="muted"></div>
+        </div>
+
+        <div class="adv-control-grid">
+          <div class="pill adv-control">
+            <span class="title">الهدف</span>
+            <select id="sheetSelect" aria-label="الهدف"></select>
+          </div>
+          <div class="pill adv-control">
             <span class="title">التنفيذ</span>
-            <select id="targetMode">
+            <select id="targetMode" aria-label="وضع التنفيذ">
               <option value="agent">الوكيل فقط</option>
               <option value="both" selected>الإدارة + الوكيل</option>
             </select>
           </div>
-          <button id="refreshSheetsBtn" class="btn-ghost" type="button" title="تحديث قائمة الأوراق">↻</button>
-        </div>
-
-        <div class="pill-group">
-          <div class="pill">
+          <div class="pill adv-control adv-control--color">
             <span class="title">لون الإدارة</span>
-            <input id="adminColor" type="color" value="#fde68a">
+            <input id="adminColor" type="color" value="#fde68a" aria-label="لون الإدارة">
           </div>
-          <div class="pill">
+          <div class="pill adv-control adv-control--color">
             <span class="title">لون سحب وكالة</span>
-            <input id="withdrawColor" type="color" value="#ddd6fe">
+            <input id="withdrawColor" type="color" value="#9629ff" aria-label="لون سحب وكالة">
           </div>
         </div>
 
@@ -292,47 +324,94 @@
             </label>
           </div>
         </div>
+
+        <div class="adv-subcard" id="bulkToggleCard">
+          <div class="row" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <strong>إظهار أداة البحث الجماعي</strong>
+            <button id="bulkToggleBtn" class="btn-blue" type="button" style="min-width:130px">تفعيل الأداة</button>
+          </div>
+          <div id="bulkToggleNote" class="muted">تظهر الأداة في الموبايل بعد التفعيل (20 نتيجة لكل صفحة).</div>
+        </div>
+
+        <div class="adv-subcard" id="personCard">
+          <div class="row" style="justify-content:space-between; align-items:center">
+            <strong>بيانات صاحب الـID</strong>
+            <div class="row" style="gap:6px; flex:0 0 auto">
+              <button id="copyMsgBtn" class="btn-green" type="button">نسخ الرسالة</button>
+              <button id="colorAllBtn" class="btn-ghost" type="button" title="تلوين كل الـIDs لهذا الشخص بسرعة">تلوين الكل</button>
+            </div>
+          </div>
+          <div id="personNote" class="muted" style="margin-top:6px">—</div>
+          <textarea id="personMsg" rows="8" style="margin-top:8px;" readonly></textarea>
+        </div>
+
         <div id="aiMountHere"></div>
         <div id="afterAiHook"></div>
       </div>
 
-      <div class="card flat" id="loadCard">
-        <div class="row stretch">
-          <button id="reloadBtn" class="btn-red" type="button">تحميل البيانات</button>
-        </div>
-        <div id="loadNote" class="muted"></div>
-      </div>
-
-      <div class="card flat" id="bulkToggleCard">
-        <div class="row" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-          <strong>إظهار أداة البحث الجماعي</strong>
-          <button id="bulkToggleBtn" class="btn-blue" type="button" style="min-width:130px">تفعيل الأداة</button>
-        </div>
-        <div id="bulkToggleNote" class="muted" style="margin-top:6px">تظهر الأداة في الموبايل بعد التفعيل (20 نتيجة لكل صفحة).</div>
-      </div>
-
-      <div id="bulkMobileMount" class="span2"></div>
-
-      <div class="card flat" id="personCard">
-        <div class="row" style="justify-content:space-between; align-items:center">
-          <strong>بيانات صاحب الـID</strong>
-          <div class="row" style="gap:6px; flex:0 0 auto">
-            <button id="copyMsgBtn" class="btn-green" type="button">نسخ الرسالة</button>
-            <button id="colorAllBtn" class="btn-ghost" type="button" title="تلوين كل الـIDs لهذا الشخص بسرعة">تلوين الكل</button>
-          </div>
-        </div>
-        <div id="personNote" class="muted" style="margin-top:6px">—</div>
-        <textarea id="personMsg" rows="8" style="margin-top:8px;" readonly></textarea>
-      </div>
+      <div id="bulkMobileMount" class="span2" style="display:none"></div>
     </section>
 
     <section id="bulkView" class="view-panel">
-      <div class="card span2" id="bulkCard">
-        <h3>أداة البحث الجماعي</h3>
-        <div class="bulk-note" id="bulkStatusText">ألصق IDs وسيتم التحليل تلقائيًا.</div>
+      <div class="card" id="bulkCard">
+        <div class="bulk-header">
+          <h3>أداة البحث الجماعي</h3>
+          <div class="bulk-note" id="bulkStatusText">ألصق IDs وسيتم التحليل تلقائيًا.</div>
+        </div>
 
-        <div class="row" style="gap:12px; flex-wrap:wrap; align-items:flex-end">
-          <div style="flex:1; min-width:180px">
+        <div class="bulk-input-grid">
+          <textarea id="bulkIds" placeholder="ألصق عدة IDs (سطر لكل ID أو مفصولة بمسافات)"></textarea>
+          <div class="bulk-actions-column">
+            <button id="bulkPasteBtn" class="btn-blue">لصق ثم بحث</button>
+            <button id="bulkExecuteBtn" class="btn-red" disabled>تنفيذ الكل</button>
+            <button id="bulkResetBtn" class="btn-ghost">إعادة تعيين</button>
+            <button id="bulkCopyAllBtn" class="btn-ghost" disabled>نسخ الكل</button>
+            <button id="bulkCopySalaryBtn" class="btn-ghost" disabled>نسخ الراتب فقط</button>
+          </div>
+        </div>
+
+        <div class="bulk-progress-wrap">
+          <div class="bulk-progress">
+            <div id="bulkProgressBar" class="bulk-progress-bar"></div>
+          </div>
+          <div class="bulk-progress-text">
+            <span id="bulkProgressLabel">0%</span>
+            <span id="bulkSummaryText"></span>
+          </div>
+        </div>
+
+        <div class="bulk-counters">
+          <div class="bulk-counter">عدد الإدخالات: <b id="bulkCountTotal">0</b></div>
+          <div class="bulk-counter">ملوّن: <b id="bulkCountColored">0</b></div>
+          <div class="bulk-counter">غير ملوّن: <b id="bulkCountUncolored">0</b></div>
+          <div class="bulk-counter">مجموع الرواتب: <b id="bulkSalarySum">0</b></div>
+        </div>
+
+        <div class="bulk-table-wrap">
+          <table class="bulk-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>الراتب</th>
+                <th>الحالة</th>
+                <th>ملوّن؟</th>
+              </tr>
+            </thead>
+            <tbody id="bulkResultsBody"></tbody>
+          </table>
+          <div id="bulkPagination" class="bulk-pagination">
+            <button id="bulkPrevBtn" class="bulk-page-btn">‹ السابق</button>
+            <span id="bulkPageInfo" class="bulk-page-info"></span>
+            <button id="bulkNextBtn" class="bulk-page-btn">التالي ›</button>
+          </div>
+          <div id="bulkEmptyState" class="bulk-empty">لا توجد نتائج بعد.</div>
+        </div>
+      </div>
+
+      <div class="card" id="bulkConfigCard">
+        <div class="bulk-config-grid">
+          <div class="bulk-config-block">
             <label class="small">النطاق</label>
             <select id="bulkScope">
               <option value="agent">الوكيل فقط</option>
@@ -340,7 +419,7 @@
               <option value="all">الكل (يشمل الخارجي)</option>
             </select>
           </div>
-          <div style="flex:1; min-width:220px">
+          <div class="bulk-config-block">
             <label class="small">ورقة الهدف</label>
             <div class="row" style="gap:6px; align-items:center">
               <select id="bulkTargetSheet" style="flex:1"></select>
@@ -349,12 +428,12 @@
           </div>
         </div>
 
-        <div class="row stretch" style="margin-top:10px">
+        <div class="bulk-inline">
           <input id="bulkNewSheet" type="text" placeholder="اسم ورقة جديدة (داخل الإدارة)">
           <button id="bulkCreateSheet" class="btn-ghost">إنشاء ورقة</button>
         </div>
 
-        <div id="bulkExternalWrap" style="margin-top:12px; display:none">
+        <div id="bulkExternalWrap" class="bulk-external" style="display:none">
           <label class="small" style="display:block">ورقة الهدف (خارجي) <span id="bulkExternalFileLabel" class="muted"></span></label>
           <div class="row" style="gap:6px; align-items:center">
             <select id="bulkExternalTargetSheet" style="flex:1"></select>
@@ -367,71 +446,27 @@
           <div id="bulkExternalNote" class="muted" style="margin-top:6px"></div>
         </div>
 
-        <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap">
-          <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:180px">
+        <div class="bulk-config-grid two">
+          <div class="bulk-color-chip">
             <input id="bulkAdminColor" type="color" value="#fde68a" style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
             <label class="small" style="margin:0">لون الإدارة</label>
           </div>
-          <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:180px">
-            <input id="bulkWithdrawColor" type="color" value="#ddd6fe" style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
+          <div class="bulk-color-chip">
+            <input id="bulkWithdrawColor" type="color" value="#9629ff" style="width:38px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0" />
             <label class="small" style="margin:0">لون الوكيل / سحب الوكالة</label>
           </div>
         </div>
 
-        <div class="row" style="margin-top:12px; align-items:center; gap:12px; flex-wrap:wrap">
+        <div class="bulk-discount-row">
           <div class="row" style="gap:8px; align-items:center">
             <label class="small" style="margin:0">الخصم %</label>
             <input id="bulkDiscount" type="number" min="0" max="100" value="0" step="1" style="width:110px">
           </div>
           <div class="muted" id="bulkDiscountNote">يُطبّق تلقائيًا على النتائج.</div>
         </div>
-
-        <div class="bulk-input-grid" style="margin-top:12px">
-          <textarea id="bulkIds" placeholder="ألصق عدة IDs (سطر لكل ID أو مفصولة بمسافات)"></textarea>
-          <div class="bulk-actions-column">
-            <button id="bulkPasteBtn" class="btn-blue">لصق ثم بحث</button>
-            <button id="bulkExecuteBtn" class="btn-red" disabled>تنفيذ الكل</button>
-            <button id="bulkResetBtn" class="btn-ghost">إعادة تعيين</button>
-            <button id="bulkCopyAllBtn" class="btn-ghost" disabled>نسخ الكل</button>
-            <button id="bulkCopySalaryBtn" class="btn-ghost" disabled>نسخ الراتب فقط</button>
-          </div>
-        </div>
-
-        <div class="bulk-progress">
-          <div id="bulkProgressBar" class="bulk-progress-bar"></div>
-        </div>
-        <div class="bulk-progress-text">
-          <span id="bulkProgressLabel">0%</span>
-          <span id="bulkSummaryText"></span>
-        </div>
-
-        <div class="bulk-counters">
-          <div>عدد الإدخالات: <b id="bulkCountTotal">0</b></div>
-          <div>ملوّن: <b id="bulkCountColored">0</b></div>
-          <div>غير ملوّن: <b id="bulkCountUncolored">0</b></div>
-          <div>مجموع الرواتب: <b id="bulkSalarySum">0</b></div>
-        </div>
-
-        <table class="bulk-table" style="margin-top:12px">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>ID</th>
-              <th>الراتب</th>
-              <th>الحالة</th>
-              <th>ملوّن؟</th>
-            </tr>
-          </thead>
-          <tbody id="bulkResultsBody"></tbody>
-        </table>
-        <div id="bulkPagination" class="bulk-pagination">
-          <button id="bulkPrevBtn" class="bulk-page-btn">‹ السابق</button>
-          <span id="bulkPageInfo" class="bulk-page-info"></span>
-          <button id="bulkNextBtn" class="bulk-page-btn">التالي ›</button>
-        </div>
-        <div id="bulkEmptyState" class="bulk-empty">لا توجد نتائج بعد.</div>
       </div>
     </section>
+
   </div>
 
   <div id="drawerBackdrop" class="drawer-backdrop"></div>
@@ -444,6 +479,7 @@
       <button id="menuReload" class="drawer-item primary" type="button">تحميل البيانات</button>
       <button id="menuHome" class="drawer-item" type="button">الصفحة الرئيسية</button>
       <button id="menuBulk" class="drawer-item" type="button">أداة البحث الجماعي</button>
+      <button id="refreshSheetsBtn" class="drawer-item" type="button">تحديث قائمة الأوراق</button>
       <div class="drawer-section">
         <label class="small" for="menuSection">القسم الحالي</label>
         <select id="menuSection"></select>
@@ -654,6 +690,10 @@ const advCard  = document.getElementById('advCard');
     if (menuReloadBtn) menuReloadBtn.addEventListener('click', () => {
       closeDrawer();
       if (reloadBtn) reloadBtn.click();
+    });
+    if (refreshSheetsBtn) refreshSheetsBtn.addEventListener('click', () => {
+      closeDrawer();
+      fillSheets();
     });
     document.addEventListener('keydown', evt => {
       if (evt.key === 'Escape') closeDrawer();
@@ -1326,9 +1366,9 @@ const advCard  = document.getElementById('advCard');
 
       const config = {
         sheetName: sheetName,
-        color: bulkWithdrawColor?.value || '#ddd6fe',
+        color: bulkWithdrawColor?.value || '#9629ff',
         adminColor: bulkAdminColor?.value || '#fde68a',
-        withdrawColor: bulkWithdrawColor?.value || '#ddd6fe',
+        withdrawColor: bulkWithdrawColor?.value || '#9629ff',
         targetMode: targetMode,
         scope: scope,
         externalSheetName: externalSheetName
@@ -1541,6 +1581,7 @@ const advCard  = document.getElementById('advCard');
 
     /******** تحميل الأوراق ********/
     function fillSheets(){
+      if (advNote) advNote.textContent = '⏳ جارٍ تحديث قائمة الأوراق…';
       google.script.run
         .withSuccessHandler(arr=>{
           const list = Array.isArray(arr) ? arr : [];
@@ -1554,6 +1595,7 @@ const advCard  = document.getElementById('advCard');
             const keep = bulkTargetSheet.value;
             refreshBulkSheets(keep, bulkExternalTargetSheet?.value);
           }
+          if (advNote) advNote.textContent = '✅ تم تحديث قائمة الأوراق';
         })
         .withFailureHandler(err=> advNote.textContent = 'خطأ: '+(err?.message||''))
         .getAdminSheets();
@@ -2448,7 +2490,7 @@ const advCard  = document.getElementById('advCard');
           <span class="track"></span><span class="thumb"></span>
         </label>
       </div>
-      <input id="lgpColor" type="color" class="lgp-color" value="#ddd6fe" title="لون بعد النقل" disabled>
+      <input id="lgpColor" type="color" class="lgp-color" value="#9629ff" title="لون بعد النقل" disabled>
 
       <button id="lgpMove" class="lgp-primary">نقل المحدد</button>
     </div>
